@@ -1,0 +1,68 @@
+*****************************************************************
+      SolidWorks Corporation - Compte-rendu d'état du Processeur IGES
+*****************************************************************
+=================================================================
+Informations générales
+=================================================================
+Envoi de l'identification du produit système en cours  : AX-12A.SLDASM
+Réception de l'identification du produit système en cours: AX-12A.SLDASM
+Nom de fichier                    : D:\DATA-TOSY\TOSY\TOPIO\TOPIO V4.05\AX12 Servo\AX-12A.IGS
+Envoi du système en cours               : SolidWorks 2012
+Version du préprocesseur         : SolidWorks 2012
+Date de création du fichier           : 130806.133621
+Date de création du modèle          : 130806.133621
+Unités                        : MM
+Echelle de l'espace modèle            : 1
+Auteur                       : dangtq
+Organisation                 : 
+
+
+=================================================================
+Informations sur le traitement des entités
+=================================================================
+
+
+=================================================================
+Analyse de précision d'un fichier IGES:
+=================================================================
+  Nombre le plus répandu de chiffres significatifs:              10
+  Nombre le plus grand de chiffres significatifs:                     13
+  Nombre moyen de chiffres significatifs :                6.06122
+  Distance maximale jusqu'à l'origine:                          1025.42
+  Distance minimale jusqu'à l'origine:                                0
+  Nombre effectif de chiffres significatifs:                   13
+
+
+=================================================================
+Récapitulatif des entités
+=================================================================
+-----------------------------------------------------------------
+Nom de type                                         Nombre converti
+---- ----                                         ----- ---------
+100  Arc                                            924       924
+102  Composite curve                               1816      1816
+110  Line                                          3670      3670
+120  Surface of revolution                          284       284
+124  Transformation matrix                          515       515
+126  Rational B-spline curve                       4469      4469
+128  Rational B-spline surface                      521       521
+142  Curve on a parametric surface                  908       908
+144  Trimmed parametric surface                     805       805
+308  Subfigure definition                             6         6
+314  Color definition                                 6         6
+408  Singular subfigure instance                      9         9
+_________________________________________________________________
+
+
+=================================================================
+Récapitulatif des résultats
+=================================================================
+Type de fonction SolidWorks                Nombre
+-----------------------                -----
+Fonction(s) volumique(s)                       6
+Fonction(s) surfacique(s)                     0
+Fonction(s) de courbe/d'esquisse                0
+--------------------------------------------
+Heure de début: samedi, mars 28, 2015 16:23:30
+Heure de fin: samedi, mars 28, 2015 16:23:39
+Durée de traitement: 0 days, 00 hours, 00 mins, 09 secs

@@ -1,0 +1,5 @@
+﻿"rayon_pignon" = 26.0313
+"largeur_robot" = 436mm
+"largeur_chenille"= "RD1@Annotations"
+"espace_sous_robot"= "largeur_robot" - "largeur_chenille" - "largeur_chenille"
+"entrplaque"= "RD1@Annotations"

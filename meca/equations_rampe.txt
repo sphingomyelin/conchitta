@@ -1,6 +1,0 @@
-﻿"length_edge_flange" = 33.11mm
-"distance_fente_rampe" = 158.61mm
-"distance_interieur" = 300mm
-"longeur_interieur"= 274.9mm
-"distance_trou" = 28.82mm
-"hauteur_conteneur"= 200mm

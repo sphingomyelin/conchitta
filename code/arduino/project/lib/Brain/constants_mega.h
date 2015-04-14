@@ -1,0 +1,14 @@
+#ifndef _CONCHITTA_CONSTANTS_MEGA_
+#define _CONCHITTA_CONSTANTS_MEGA_
+
+enum STATE
+{
+  GET_BOTTLES,
+  GO_HOME,
+  RELEASE_BOTTLES
+};
+
+#define LED 13
+
+#endif
+

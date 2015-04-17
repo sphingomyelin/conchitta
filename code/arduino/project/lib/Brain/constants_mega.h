@@ -3,12 +3,18 @@
 
 enum STATE
 {
+  START,
   GET_BOTTLES,
   GO_HOME,
   RELEASE_BOTTLES
+
 };
 
 #define LED 13
+
+
+#define DYMX_ID_R 6
+#define DYMX_ID_L 4
 
 #endif
 

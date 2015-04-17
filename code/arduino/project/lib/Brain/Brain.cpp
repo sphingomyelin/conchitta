@@ -10,6 +10,7 @@
 
 Brain::Brain() {
 	// initialize variables
+  //initDynamixel();
 }
 
 void Brain::blink() const {
@@ -23,8 +24,14 @@ void Brain::setState(STATE state) {
   _state = state;
 }
 
+void Brain::test() const {  
+  blink();
+  turnDynamixelForward();
+}
+
 
 // State functions
+void Brain::start() {}
 
 void Brain::getBottle() {}
 
@@ -36,7 +43,9 @@ void Brain::releaseBottles() {}
 // functions used by state functions
 void Brain::approachNearestBottle() {}
 
-int Brain::getBottleCount() {}
+int Brain::getBottleCount() {
+  return 0;
+}
 
 // Communication with RPi
 void Brain::getPosNearestBottle() {}
@@ -44,15 +53,32 @@ void Brain::getPosNearestBottle() {}
 // Communication with WildThumper
 void Brain::setSpeed(int speed, int steer) {
   Wire.beginTransmission(1);
-  Wire.write("v");            // set speed
-  Wire.write((v>>8)&0xFF);    // sends MSByte  
-  Wire.write((v)&0xFF);       // sends LSByte
+  Wire.write("speed");            // set speed
+  Wire.write((speed>>8)&0xFF);    // sends MSByte  
+  Wire.write((speed)&0xFF);       // sends LSByte
   Wire.endTransmission();
 
 
   Wire.beginTransmission(1);
-  Wire.write("t");            // set steer (tangential)
-  Wire.write((t>>8)&0xFF);    // sends MSByte
-  Wire.write((t)&0xFF);       // sends LSByte  
+  Wire.write("steer");            // set steer (tangential)
+  Wire.write((steer>>8)&0xFF);    // sends MSByte
+  Wire.write((steer)&0xFF);       // sends LSByte  
   Wire.endTransmission();
+}
+
+// Dynamixel motors
+
+void Brain::turnDynamixelForward() const {
+  Dynamixel.turn(DYMX_ID_R, false, 1023);
+  Dynamixel.turn(DYMX_ID_L, true, 1023);
+}
+
+void Brain::turnDynamixelBackward() const {
+  Dynamixel.turn(DYMX_ID_R, true, 1023);
+  Dynamixel.turn(DYMX_ID_L, false, 1023);
+}
+
+void Brain::stopDynamixel() const {
+  Dynamixel.turn(DYMX_ID_R, true, 0);
+  Dynamixel.turn(DYMX_ID_L, true, 0);
 }

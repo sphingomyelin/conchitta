@@ -20,7 +20,7 @@ void setup() {
 	// Set the LED as output
 	pinMode(LED, OUTPUT);
 
-  // Set the A0 as input
+  // Set the A7 as input from the IR sensor
   pinMode(A7, INPUT);
 
   // Dynamixel
@@ -52,7 +52,9 @@ void loop() {
   //   Serial.println(Dynamixel.ping(i));
   // }
 
-  // Read analog and send it to serial
+  // Read analog signal from IR sensor, determine bottle and send result to
+  // serial. It waits for 4 seconds after having detected a bottle to avoid
+  // counting a bottle twice.
   if(bottleStartTime == -1) {
     if(analogRead(A7) > 300) {
       bottle = true;

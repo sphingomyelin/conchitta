@@ -54,15 +54,15 @@ void Brain::getPosNearestBottle() {}
 void Brain::setSpeed(int speed, int steer) {
   Wire.beginTransmission(1);
   Wire.write("speed");            // set speed
-  Wire.write((speed>>8)&0xFF);    // sends MSByte  
-  Wire.write((speed)&0xFF);       // sends LSByte
+  Wire.write((speed>>8)&0xFF);    // sends the most significant byte  
+  Wire.write((speed)&0xFF);       // sends the least significant byte
   Wire.endTransmission();
 
 
   Wire.beginTransmission(1);
   Wire.write("steer");            // set steer (tangential)
-  Wire.write((steer>>8)&0xFF);    // sends MSByte
-  Wire.write((steer)&0xFF);       // sends LSByte  
+  Wire.write((steer>>8)&0xFF);    // sends the most significant byte
+  Wire.write((steer)&0xFF);       // sends the least significant byte  
   Wire.endTransmission();
 }
 

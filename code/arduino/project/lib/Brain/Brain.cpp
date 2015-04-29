@@ -24,9 +24,21 @@ void Brain::setState(STATE state) {
   _state = state;
 }
 
+void Brain::run() {
+  
+  
+  
+}
+
 void Brain::test() const {  
   blink();
-  turnDynamixelForward();
+  //turnDynamixelForward();
+  stopMotors();
+  delay(5000);
+  setSpeed(100, 50);
+  // delay(2000);
+  // setSpeed(254, 23);
+  // delay(1000);
 }
 
 
@@ -51,18 +63,28 @@ int Brain::getBottleCount() {
 void Brain::getPosNearestBottle() {}
 
 // Communication with WildThumper
-void Brain::setSpeed(int speed, int steer) {
-  Wire.beginTransmission(1);
-  Wire.write("speed");            // set speed
+void Brain::setSpeed(int speed, int steer) const {
+  Serial.print("Sending speed to WildThumper: ");
+  Serial.println(speed);
+  Wire.beginTransmission(4);
+  Wire.write("v");                // set speed
   Wire.write((speed>>8)&0xFF);    // sends the most significant byte  
   Wire.write((speed)&0xFF);       // sends the least significant byte
   Wire.endTransmission();
 
 
-  Wire.beginTransmission(1);
-  Wire.write("steer");            // set steer (tangential)
+  Serial.print("Sending steer to WildThumper: ");
+  Serial.println(steer);
+  Wire.beginTransmission(4);
+  Wire.write("w");                // set steer (tangential)
   Wire.write((steer>>8)&0xFF);    // sends the most significant byte
-  Wire.write((steer)&0xFF);       // sends the least significant byte  
+  Wire.write((steer)&0xFF);       // sends the least significant byte
+  Wire.endTransmission();
+}
+
+void Brain::stopMotors() const {
+  Wire.beginTransmission(4);
+  Wire.write("s");
   Wire.endTransmission();
 }
 

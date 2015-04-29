@@ -21,6 +21,7 @@ class Brain {
     // General functions
     void blink() const;
     void setState(STATE State);
+    void run();
     void test() const;
 
   private:
@@ -38,7 +39,8 @@ class Brain {
     void getPosNearestBottle();
 
     // Communication with WildThumper
-    void setSpeed(int speed, int steer);
+    void setSpeed(int speed, int steer) const;
+    void stopMotors() const;
 
     // Dynamixel motors
     void turnDynamixelForward() const;

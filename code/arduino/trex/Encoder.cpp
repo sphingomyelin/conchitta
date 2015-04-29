@@ -17,11 +17,11 @@ static volatile int encDeltaLt, encDeltaRt;
 static int lastLt, lastRt;
 //static int SpeedL, SpeedR;
 
-volatile int CurrentLeftSpeed=0;
-volatile int CurrentRightSpeed=0;
+volatile long CurrentLeftSpeed=0;
+volatile long CurrentRightSpeed=0;
 volatile int DiffRight=0;
 volatile int DiffLeft=0;
-static volatile int encLt, encRt;
+static volatile long encLt, encRt;
 static volatile int temp=0;
 static volatile int OldL=0;
 static volatile int OldR=0;
@@ -30,6 +30,7 @@ ISR( TIMER1_COMPA_vect ) {
   //Serial.print("interrupt"); 
   //Serial.println("                  in");
   timer_count++;
+  digitalWrite(9, HIGH);
 
   int val, diff;
   val = 0;
@@ -63,6 +64,7 @@ ISR( TIMER1_COMPA_vect ) {
     OldR=encRt;
     timer_count=0;
   }
+  digitalWrite(9, LOW);
 }
 
 void QuadratureEncoderInit(void)
@@ -89,6 +91,7 @@ void QuadratureEncoderInit(void)
   pinMode(ENC_RT_A, INPUT);
   pinMode(ENC_LT_B, INPUT);
   pinMode(ENC_RT_B, INPUT);
+  pinMode(9, OUTPUT);
 
   val=0;
   if (digitalRead(ENC_LT_A))
@@ -128,11 +131,11 @@ int QuadratureEncoderReadRt( void )	// read single step encoders
   return val; // counts since last call
 }
 
-int GetSpeedRight(void)
+long GetSpeedRight(void)
 {return CurrentRightSpeed;}
-int GetSpeedLeft(void)
+long GetSpeedLeft(void)
 {return CurrentLeftSpeed;}
-int GetPosLeft(void)
+long GetPosLeft(void)
 {return encLt;}
-int GetPosRight(void)
+long GetPosRight(void)
 {return encRt;}

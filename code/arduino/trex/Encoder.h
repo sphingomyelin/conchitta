@@ -4,8 +4,8 @@
 #include "Arduino.h"
 //#include "Constant.h"
 
-#define EncoderTimerFrequency 64
-#define SpeedTimerFrequency 64
+#define EncoderTimerFrequency 4096
+#define SpeedTimerFrequency 4096
 #define SpeedFilterCoeff 1
 
 #define ENC_RT_A 10
@@ -16,9 +16,9 @@
 int QuadratureEncoderReadLt(void);
 int QuadratureEncoderReadRt(void);
 void QuadratureEncoderInit(void);	
-int GetSpeedRight(void);
-int GetSpeedLeft(void);
-int GetPosLeft(void);
-int GetPosRight(void);
+long GetSpeedRight(void);
+long GetSpeedLeft(void);
+long GetPosLeft(void);
+long GetPosRight(void);
 
 #endif

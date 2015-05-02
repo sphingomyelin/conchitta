@@ -112,42 +112,53 @@ struct multiple_peak_request mpr;
 unsigned char *data;
 
 int t_int = 10;
+int led = 13;
 
 
 void setup()
 {
-  Serial.begin(9600);
-  Serial1.begin(9600);
+  Serial.begin(115200);
+  //Serial1.begin(9600);
+
+  delay(5000);
+  Serial.println("Start...");
+
+  pinMode(led, OUTPUT); 
+
   lcam_setup();
   mpr.done=1;
   pr.done=1;
+
+  // Retreive images from buffer
+  data = lcam_getdata();
+
 }
 
 void loop()
 {
   //Wait for requests and take pictures in the meanwhile
+  Serial.println(millis());
+  //digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)
+  //delay(1000);               // wait for a second
+  //digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW
+  //delay(1000);               // wait for a second
+
+
+  int micros_0, micros_1, micros_2;
   do
   {
-    delay(5);
-    lcam_integrate(50);
+    lcam_integrate(50); // about 940 us
+    //delay(50);
+    lcam_reset(); // about 3540 us
+    delay(1);
   }
   while(!Serial.available());
-
-  //Requests available: process them
-  processBuffer();
-
-  if(reset_request)
-  {
-    reset_request = 0;       //Acknowledge
-    //lcam_setup();            //Reset camera logic, gain and offsets
-    //return; 
-  }
 
   // load pixel values to lcam_buffer byte array
   lcam_read();
 
-  // Retreive images from buffer
-  data = lcam_getdata();
+  //Requests available: process them
+  processBuffer();
 
   if(!(pr.done))
   {
@@ -204,6 +215,7 @@ void processBuffer()
 
       case 'R': //Reset
         lcam_setup();
+        reset_request = 0;
         break;
 
       default: 
@@ -223,7 +235,7 @@ void sendPicture(int cam)
       for(i=0;i<102;i++)
       {
         Serial.print(data[j*NPIXELS+i]);
-        Serial.print("\t");
+        Serial.print(" ");
       }
       Serial.println();
     }
@@ -233,7 +245,7 @@ void sendPicture(int cam)
     for(i=0;i<102;i++)
     {
       Serial.print(data[(cam-1)*NPIXELS+i]);
-      Serial.print("\t");
+      Serial.print(" ");
 
     }
     Serial.println();

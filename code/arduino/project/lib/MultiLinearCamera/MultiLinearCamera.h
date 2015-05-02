@@ -40,10 +40,10 @@ void lcam_integrate(unsigned int microseconds);
 
 unsigned char* lcam_getdata(void);
 /*unsigned char* lcam_getdata1(void);
-unsigned char* lcam_getdata2(void);
-unsigned char* lcam_getdata3(void);
-unsigned char* lcam_getdata4(void);
-unsigned char* lcam_getdata5(void);*/
+  unsigned char* lcam_getdata2(void);
+  unsigned char* lcam_getdata3(void);
+  unsigned char* lcam_getdata4(void);
+  unsigned char* lcam_getdata5(void);*/
 
 void lcam_read(void);
 

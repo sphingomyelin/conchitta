@@ -19,7 +19,7 @@ int highVolts;
 int startVolts;
 int Leftspeed=0;
 int Rightspeed=0;
-int Speed;
+int Speed = 254;
 int Steer;
 bool Stop;                                                    // true=Motors off, false=Motors on
 byte Charged=1;                                               // 0=Flat battery  1=Charged battery
@@ -33,8 +33,8 @@ int data;
 int servo[7];
 
 long last_update;
-//int CurrentLeftSpeed;
-//int CurrentRightSpeed;
+int MeasuredLeftSpeed;
+int MeasuredRightSpeed;
 
 void setup()
 {
@@ -49,9 +49,9 @@ void setup()
   // enable pull-ups
   digitalWrite(18,1);
   digitalWrite(19,1);
-  Wire.begin(4);                // join i2c bus with address #4
-  Wire.onReceive(receiveEvent); // register event
-  Wire.onRequest(requestEvent); // register event
+//  Wire.begin(4);                // join i2c bus with address #4
+//  Wire.onReceive(receiveEvent); // register event
+//  Wire.onRequest(requestEvent); // register event
 
     // Charging
   pinMode(Charger,OUTPUT);                                   // change Charger pin to output
@@ -132,6 +132,15 @@ void loop()
      }*/
 
     CalculateSpeed();
+      MeasuredLeftSpeed=GetSpeedLeft();
+      MeasuredRightSpeed=GetSpeedRight();
+      Serial.println("Encoders: ");
+      Serial.print("Right speed");            
+      Serial.print(" ");
+      Serial.println(MeasuredRightSpeed);         
+      Serial.print("Left speed");              
+      Serial.print(" ");
+      Serial.println(MeasuredLeftSpeed);         
 
     // --------------------------------------------------------- Code to drive dual "H" bridges --------------------------------------
     if (Charged==1 && !Stop)                                           // Only power motors if battery voltage is good
@@ -276,30 +285,40 @@ void requestEvent() {
 
 void MotorBeep(int beeps)                              
 {
-  digitalWrite(lmbrkpin,0);                             // ensure breaks are off
-  digitalWrite(rmbrkpin,0);
+   int pwmon = 250;
+   
+    analogWrite (LmotorA,0);                                // turn off motors
+    analogWrite (LmotorB,0);                                // turn off motors
+    analogWrite (RmotorA,0);                                // turn off motors
+    analogWrite (RmotorB,0);                                // turn off motors
+    
 
   for(int b=0;b<beeps;b++)                              // loop to generate multiple beeps
   {
     for(int duration=0;duration<400;duration++)         // generate 2kHz tone for 200mS
     {
-      digitalWrite(lmdirpin,1);                         // drive left  motor forward
-      digitalWrite(rmdirpin,1);                         // drive right motor forward
-      digitalWrite(lmpwmpin,1);                         // left  motor at 100%
-      digitalWrite(rmpwmpin,1);                         // right motor at 100%
+      analogWrite(RmotorA,0);                          // drive right motor forward
+      analogWrite(RmotorB,pwmon);
+      analogWrite(LmotorA,0);                          // drive left  motor forward
+      analogWrite(LmotorB,pwmon);
       delayMicroseconds(50);                            // limit full power to 50uS
-      digitalWrite(lmpwmpin,0);                         // shutdown left  motor
-      digitalWrite(rmpwmpin,0);                         // shutdown right motor
+      analogWrite (LmotorA,0);                                // turn off motors
+      analogWrite (LmotorB,0);                                // turn off motors
+      analogWrite (RmotorA,0);                                // turn off motors
+      analogWrite (RmotorB,0);                                // turn off motors
+      delayMicroseconds(200);                           // wait aditional 200uS to generate 2kHz tone
+      
+      analogWrite(RmotorA,pwmon);                          // drive right motor forward
+      analogWrite(RmotorB,0);
+      analogWrite(LmotorA,pwmon);                          // drive left  motor forward
+      analogWrite(LmotorB,0);
+      delayMicroseconds(50);                              // limit full power to 50uS
+      analogWrite (LmotorA,0);                                // turn off motors
+      analogWrite (LmotorB,0);                                // turn off motors
+      analogWrite (RmotorA,0);                                // turn off motors
+      analogWrite (RmotorB,0);                                // turn off motors
       delayMicroseconds(200);                           // wait aditional 200uS to generate 2kHz tone
 
-      digitalWrite(lmdirpin,0);                         // drive left  motor backward
-      digitalWrite(rmdirpin,0);                         // drive right motor backward
-      digitalWrite(lmpwmpin,1);                         // left  motor at 100%
-      digitalWrite(rmpwmpin,1);                         // right motor at 100%
-      delayMicroseconds(50);                            // limit full power to 50uS
-      digitalWrite(lmpwmpin,0);                         // shutdown left  motor
-      digitalWrite(rmpwmpin,0);                         // shutdown right motor
-      delayMicroseconds(200);                           // wait aditional 200uS to generate 2kHz tone
     }
     delay(200);                                         // pause for 200mS (1/5th of a second) between beeps
   }

@@ -30,13 +30,13 @@ ISR( TIMER1_COMPA_vect ) {
   //Serial.print("interrupt"); 
   //Serial.println("                  in");
   timer_count++;
-  digitalWrite(9, HIGH);
+//  digitalWriteFast(9, HIGH);
 
   int val, diff;
   val = 0;
-  if(digitalRead(ENC_LT_A))
+  if(digitalReadFast(ENC_LT_A))
     val = 3;
-  if(digitalRead(ENC_LT_B))
+  if(digitalReadFast(ENC_LT_B))
     val ^= 1;						// convert gray to binary
   diff = lastLt - val;				// difference last - new
   if( diff & 1 ){					// bit 0 = value (1)
@@ -45,9 +45,9 @@ ISR( TIMER1_COMPA_vect ) {
   }
 
   val = 0;
-  if( digitalRead(ENC_RT_A) )
+  if( digitalReadFast(ENC_RT_A) )
     val = 3;
-  if( digitalRead(ENC_RT_B))
+  if( digitalReadFast(ENC_RT_B))
     val ^= 1;						// convert gray to binary
   diff = lastRt - val;				// difference last - new
   if( diff & 1 ){					// bit 0 = value (1)
@@ -64,7 +64,7 @@ ISR( TIMER1_COMPA_vect ) {
     OldR=encRt;
     timer_count=0;
   }
-  digitalWrite(9, LOW);
+//  digitalWriteFast(9, LOW);
 }
 
 void QuadratureEncoderInit(void)
@@ -78,11 +78,11 @@ void QuadratureEncoderInit(void)
   TCCR1B = 0;// same for TCCR1B
   TCNT1  = 0;//initialize counter value to 0;
   // set timer count for 1khz increments
-  OCR1A = 16000000/256/EncoderTimerFrequency;// = (16*10^6) / (1000*8) - 1
+  OCR1A = 16000000/8/EncoderTimerFrequency;// = (16*10^6) / (1000*8) - 1
   // turn on CTC mode
   TCCR1B |= (1 << WGM12);
   // Set CS11 bit for 8 prescaler
-  TCCR1B |= (1 << CS12);   
+  TCCR1B |= (1 << CS11);   
   // enable timer compare interrupt
   TIMSK1 |= (1 << OCIE1A);
 
@@ -94,17 +94,17 @@ void QuadratureEncoderInit(void)
   pinMode(9, OUTPUT);
 
   val=0;
-  if (digitalRead(ENC_LT_A))
+  if (digitalReadFast(ENC_LT_A))
     val = 3;
-  if (digitalRead(ENC_LT_B))
+  if (digitalReadFast(ENC_LT_B))
     val ^= 1;
   lastLt = val;
   encDeltaLt = 0;
 
   val=0;
-  if (digitalRead(ENC_RT_A))
+  if (digitalReadFast(ENC_RT_A))
     val = 3;
-  if (digitalRead(ENC_RT_B))
+  if (digitalReadFast(ENC_RT_B))
     val ^= 1;
   lastRt = val;
   encDeltaRt = 0;

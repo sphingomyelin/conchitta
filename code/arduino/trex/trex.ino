@@ -17,10 +17,10 @@ unsigned long leftoverload;
 unsigned long rightoverload;
 int highVolts;
 int startVolts;
-int Leftspeed=0;
-int Rightspeed=0;
-int Speed = 254;
-int Steer;
+int speed_R = 0;
+int speed_L = 0;
+long Speed = 60;  //entre 0 et 100 
+long Steer = 0;  //entre 0 et 90
 bool Stop;                                                    // true=Motors off, false=Motors on
 byte Charged=1;                                               // 0=Flat battery  1=Charged battery
 int Leftmode=1;                                               // 0=reverse, 1=brake, 2=forward
@@ -33,8 +33,10 @@ int data;
 int servo[7];
 
 long last_update;
-int MeasuredLeftSpeed;
-int MeasuredRightSpeed;
+long MeasuredSpeed_R;
+long MeasuredSpeed_L;
+
+int integrator_R=0, integrator_L=0;
 
 void setup()
 {
@@ -61,6 +63,7 @@ void setup()
   last_update=millis();
   QuadratureEncoderInit();
   MotorBeep(3);
+  
 }
 
 
@@ -131,16 +134,8 @@ void loop()
      Steer=0;
      }*/
 
-    CalculateSpeed();
-      MeasuredLeftSpeed=GetSpeedLeft();
-      MeasuredRightSpeed=GetSpeedRight();
-      Serial.println("Encoders: ");
-      Serial.print("Right speed");            
-      Serial.print(" ");
-      Serial.println(MeasuredRightSpeed);         
-      Serial.print("Left speed");              
-      Serial.print(" ");
-      Serial.println(MeasuredLeftSpeed);         
+      CalculateSpeed();
+       
 
     // --------------------------------------------------------- Code to drive dual "H" bridges --------------------------------------
     if (Charged==1 && !Stop)                                           // Only power motors if battery voltage is good
@@ -196,30 +191,88 @@ void loop()
   }
 }
 
-
-void CalculateSpeed()
+void CalculateSpeed() // do separate function for regulation?
 {
-  Leftspeed=Speed+Steer/2;
-  Rightspeed=Speed-Steer/2;
+  int Kpi=Kp+Ki;    // sth beween 1 and 1000 (fix)(kp 0.12 and ki 0.001 pour tp köchli)
+  int inv_Kpi=(1024/Kpi);  // sth beween 1 and 1000 (partie entière)
+  long speed_difference_R, speed_difference_L;
+  long speed_p_R, speed_p_L;
+  long elim_R, elim_L;
+  
+  Serial.print("inv_kpi");            
+  Serial.print(" ");
+  Serial.println(inv_Kpi); 
+  
+  
+  // attention aux floating points, bien serai qqch comme 2*speed + steer/2
+  speed_L=(2*(long)Speed+Steer)*1024;                  // speed etre 0 et 100 (en %) 
+  speed_R=(2*(long)Speed-(long)Steer)*1024;                  // steer entre 0 et 90 (en °)
+  // speed_LR entre 0 et 290000 :-)
+  
+    Serial.println("Speed calc: ");
+  Serial.print("speed_R");            
+  Serial.print(" ");
+  Serial.println(speed_R);         
+  Serial.print("speed_L");              
+  Serial.print(" ");
+  Serial.println(speed_L);  
+  
+  // normaliser par voltage mesuré?
+  MeasuredSpeed_L=GetSpeedLeft()*1024;        // max mesuré a 255 PWM et 14V est d'env. 213
+  MeasuredSpeed_R=GetSpeedRight()*1024;       // max mesuré a 7 V est denv 100
+  
+  Serial.println("Encoders: ");
+  Serial.print("Right speed");            
+  Serial.print(" ");
+  Serial.println(MeasuredSpeed_R);         
+  Serial.print("Left speed");              
+  Serial.print(" ");
+  Serial.println(MeasuredSpeed_L);  
+  
+    Serial.println("Voltage: ");          
+  Serial.println(Volts); 
+  
+  
+  //Right
+	  speed_difference_R = speed_R - MeasuredSpeed_R;
+	  speed_p_R = integrator_R + (Kpi * speed_difference_R)/1024;
+	  // arw
+          elim_R = speed_difference_R - (speed_p_R - speed_R)*inv_Kpi;
+	  integrator_R = integrator_R + Ki*elim_R;
+         
+  //Left
+	  speed_difference_L = speed_L - MeasuredSpeed_L;
+	  speed_p_L = integrator_L + Kpi * speed_difference_L;
+	  // arw
+          elim_L = speed_difference_L - (speed_p_L - speed_L)*inv_Kpi;
+	  integrator_L = integrator_L + Ki*elim_L;
 
-  //  CurrentLeftSpeed=GetSpeedLeft;
-  //  CurrentRightSpeed=GetSpeedRight;
-  //  Leftspeed=Kp*(Leftspeed-CurrentLeftSpeed);
-  //  Rightspeed=Kp*(Rightspeed-CurrentRightSpeed);
 
-  if (Leftspeed>0) Leftmode=2;
-  else if (Leftspeed<0) Leftmode=0;
+  if (speed_p_L>0) Leftmode=2;
+  else if (speed_p_L<0) Leftmode=0;
   else Leftmode=1;
-  if (Rightspeed>0) Rightmode=2;
-  else if (Rightspeed<0) Rightmode=0;
+  if (speed_p_R>0) Rightmode=2;
+  else if (speed_p_R<0) Rightmode=0;
   else Rightmode=1;
+  
+  speed_p_L=(speed_p_L)>>10;
+  speed_p_R=(speed_p_R)>>10;
+  
+  Serial.println("Regulator: ");
+  Serial.print("Set Right speed");            
+  Serial.print(" ");
+  Serial.println(speed_p_R);         
+  Serial.print("Set Left speed");              
+  Serial.print(" ");
+  Serial.println(speed_p_L);  
+  Serial.println(" ");
 
-  LeftPWM = abs(Leftspeed);
-  LeftPWM = min(LeftPWM,255);                                   // set maximum limit 255
-  RightPWM = abs(Rightspeed);
-  RightPWM = min(RightPWM,255);                                 // set maximum limit 255
+  LeftPWM = abs(speed_p_L);
+  LeftPWM = min(LeftPWM,250);                                   // set maximum limit 250
+  RightPWM = abs(speed_p_R);
+  RightPWM = min(RightPWM,250);                                 // set maximum limit 250
+
 }
-
 
 
 void receiveEvent(int bytesReceived)

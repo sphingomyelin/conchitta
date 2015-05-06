@@ -7,7 +7,7 @@
 //#include "Constant.h"
 
 #define EncoderTimerFrequency 20000
-#define SpeedTimerFrequency 64
+#define SpeedTimerFrequency 100
 #define SpeedFilterCoeff 0
 
 int QuadratureEncoderReadLt(void);

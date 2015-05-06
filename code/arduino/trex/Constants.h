@@ -44,7 +44,8 @@
 
 //====================Controller settings==========
 
-#define Kp                0120
-#define Ki                0000
+#define Kp                2.0
+#define Ki                0.005
 #define Speedratio        1
+#define SPEED            60
 

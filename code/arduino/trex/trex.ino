@@ -19,8 +19,8 @@ int highVolts;
 int startVolts;
 int speed_R = 0;
 int speed_L = 0;
-long Speed = 60;  //entre 0 et 100 
-long Steer = 0;  //entre 0 et 90
+int Speed = SPEED;  //entre 0 et 100 
+int Steer = 0;  //entre 0 et 90
 bool Stop;                                                    // true=Motors off, false=Motors on
 byte Charged=1;                                               // 0=Flat battery  1=Charged battery
 int Leftmode=1;                                               // 0=reverse, 1=brake, 2=forward
@@ -33,10 +33,13 @@ int data;
 int servo[7];
 
 long last_update;
-long MeasuredSpeed_R;
-long MeasuredSpeed_L;
+int MeasuredSpeed_R;
+int MeasuredSpeed_L;
 
 int integrator_R=0, integrator_L=0;
+
+float const Kpi = Kp+Ki;                  // sth beween 0.001 and 1 (fix)(kp 0.12 and ki 0.001 pour tp köchli)
+float const inv_Kpi = 1.0/Kpi;            // sth beween 1 and 1000 
 
 void setup()
 {
@@ -193,11 +196,9 @@ void loop()
 
 void CalculateSpeed() // do separate function for regulation?
 {
-  int Kpi=Kp+Ki;    // sth beween 1 and 1000 (fix)(kp 0.12 and ki 0.001 pour tp köchli)
-  int inv_Kpi=(1024/Kpi);  // sth beween 1 and 1000 (partie entière)
-  long speed_difference_R, speed_difference_L;
-  long speed_p_R, speed_p_L;
-  long elim_R, elim_L;
+  int speed_difference_R, speed_difference_L;
+  int speed_p_R, speed_p_L;
+  int elim_R, elim_L;
   
   Serial.print("inv_kpi");            
   Serial.print(" ");
@@ -205,11 +206,20 @@ void CalculateSpeed() // do separate function for regulation?
   
   
   // attention aux floating points, bien serai qqch comme 2*speed + steer/2
-  speed_L=(2*(long)Speed+Steer)*1024;                  // speed etre 0 et 100 (en %) 
-  speed_R=(2*(long)Speed-(long)Steer)*1024;                  // steer entre 0 et 90 (en °)
-  // speed_LR entre 0 et 290000 :-)
+ // speed_L= 2*Speed+Steer;                  // speed etre 0 et 100 (en %) 
+ // speed_R= 2*Speed-Steer;                  // steer entre 0 et 90 (en °)
+  // speed_LR entre 0 et 290 :-)
   
-    Serial.println("Speed calc: ");
+  if (abs(Speed+Steer)<255) {
+    speed_L=Speed+Steer;
+    speed_R=Speed-Steer;
+  }
+  else {
+    speed_L=(int)(Speed+Steer)/(1+(Speed+Steer)/255.0);
+    speed_R=(int)(Speed-Steer)/(1+(Speed+Steer)/255.0);
+  }
+  
+  Serial.println("Speed calc: ");
   Serial.print("speed_R");            
   Serial.print(" ");
   Serial.println(speed_R);         
@@ -218,8 +228,8 @@ void CalculateSpeed() // do separate function for regulation?
   Serial.println(speed_L);  
   
   // normaliser par voltage mesuré?
-  MeasuredSpeed_L=GetSpeedLeft()*1024;        // max mesuré a 255 PWM et 14V est d'env. 213
-  MeasuredSpeed_R=GetSpeedRight()*1024;       // max mesuré a 7 V est denv 100
+  MeasuredSpeed_L=2*GetSpeedLeft();        // 255/60 = 1.6, 136 is max_speed at 14.4V and 255. max mesuré a 255 PWM et 14V est d'env. 213
+  MeasuredSpeed_R=2*GetSpeedRight();       // max mesuré a 7 V est denv 100
   
   Serial.println("Encoders: ");
   Serial.print("Right speed");            
@@ -229,24 +239,40 @@ void CalculateSpeed() // do separate function for regulation?
   Serial.print(" ");
   Serial.println(MeasuredSpeed_L);  
   
-    Serial.println("Voltage: ");          
+  Serial.println("Voltage: ");          
   Serial.println(Volts); 
   
   
   //Right
 	  speed_difference_R = speed_R - MeasuredSpeed_R;
-	  speed_p_R = integrator_R + (Kpi * speed_difference_R)/1024;
+	  speed_p_R = integrator_R + (int)(Kpi * speed_difference_R);  //comment fait calcul? float?int???
 	  // arw
-          elim_R = speed_difference_R - (speed_p_R - speed_R)*inv_Kpi;
-	  integrator_R = integrator_R + Ki*elim_R;
+          elim_R = speed_difference_R - (int)((speed_p_R - speed_R)*inv_Kpi);
+	  integrator_R = integrator_R + (int)(Ki*elim_R);
+
+Serial.println("Calculations: ");
+  Serial.print("speed_difference");            
+  Serial.print(" ");
+  Serial.println(speed_difference_R);         
+  Serial.print("speed_p_R");              
+  Serial.print(" ");
+  Serial.println(speed_p_R);  
+  Serial.print("elim_R");            
+  Serial.print(" ");
+  Serial.println(elim_R);
+  Serial.print("integrator");            
+  Serial.print(" ");
+  Serial.println(integrator_R);              
+
          
   //Left
 	  speed_difference_L = speed_L - MeasuredSpeed_L;
-	  speed_p_L = integrator_L + Kpi * speed_difference_L;
+	  speed_p_L = integrator_L + (int)(Kpi * speed_difference_L);
 	  // arw
-          elim_L = speed_difference_L - (speed_p_L - speed_L)*inv_Kpi;
-	  integrator_L = integrator_L + Ki*elim_L;
+          elim_L = speed_difference_L - (int)((speed_p_L - speed_L)*inv_Kpi);
+	  integrator_L = integrator_L + (int)(Ki*elim_L);
 
+speed_p_R = 255;
 
   if (speed_p_L>0) Leftmode=2;
   else if (speed_p_L<0) Leftmode=0;
@@ -254,9 +280,7 @@ void CalculateSpeed() // do separate function for regulation?
   if (speed_p_R>0) Rightmode=2;
   else if (speed_p_R<0) Rightmode=0;
   else Rightmode=1;
-  
-  speed_p_L=(speed_p_L)>>10;
-  speed_p_R=(speed_p_R)>>10;
+ 
   
   Serial.println("Regulator: ");
   Serial.print("Set Right speed");            

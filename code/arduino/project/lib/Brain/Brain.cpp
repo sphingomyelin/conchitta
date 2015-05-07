@@ -14,10 +14,10 @@ Brain::Brain() {
 }
 
 void Brain::blink() const {
-  digitalWrite(LED, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(100);               // wait for a second
-  digitalWrite(LED, LOW);    // turn the LED off by making the voltage LOW
-  delay(100);
+  if(millis() - last_blink > 200) {
+    if(last_state_led == true) digitalWrite(LED, LOW);
+    else digitalWrite(LED, HIGH);
+  }
 }
 
 void Brain::setState(STATE state) {
@@ -30,15 +30,31 @@ void Brain::run() {
   
 }
 
-void Brain::test() const {  
+void Brain::test() {  
   blink();
-  //turnDynamixelForward();
-  stopMotors();
-  delay(5000);
-  setSpeed(100, 50);
-  // delay(2000);
-  // setSpeed(254, 23);
-  // delay(1000);
+  
+  // ------- Testing Belt -------
+  // turnBeltForward();
+
+  // ------- Testing Trap -------
+  //Serial.println("Move! Go");
+  openTrap();
+  delay(500);
+  closeTrap();
+  delay(500);
+  //delay(1000);
+  //delay (20); 
+
+}
+
+void Brain::RCmode() {
+  Serial.println(millis());
+  Bluetooth.process();
+  if(Bluetooth.buttonIsOn(3)) {
+    stopMotors();
+  } else {
+    setSpeed(Bluetooth.getSpeed(), Bluetooth.getSteer());
+  }
 }
 
 
@@ -83,6 +99,7 @@ void Brain::setSpeed(int speed, int steer) const {
 }
 
 void Brain::stopMotors() const {
+  Serial.println("Stopping Motors.");
   Wire.beginTransmission(4);
   Wire.write("s");
   Wire.endTransmission();
@@ -90,17 +107,26 @@ void Brain::stopMotors() const {
 
 // Dynamixel motors
 
-void Brain::turnDynamixelForward() const {
+void Brain::turnBeltForward() const {
   Dynamixel.turn(DYMX_ID_R, false, 1023);
   Dynamixel.turn(DYMX_ID_L, true, 1023);
 }
 
-void Brain::turnDynamixelBackward() const {
+void Brain::turnBeltBackward() const {
   Dynamixel.turn(DYMX_ID_R, true, 1023);
   Dynamixel.turn(DYMX_ID_L, false, 1023);
 }
 
-void Brain::stopDynamixel() const {
+void Brain::stopBelt() const {
   Dynamixel.turn(DYMX_ID_R, true, 0);
   Dynamixel.turn(DYMX_ID_L, true, 0);
+}
+
+void Brain::openTrap() const {
+  Dynamixel.moveSpeed(DYMX_ID_TRAP, 160, 1000);
+}
+
+void Brain::closeTrap() const {
+  Dynamixel.moveSpeed(DYMX_ID_TRAP, 490, 1000);
+  //Dynamixel.moveSpeed(DYMX_ID_TRAP, 500, 100);
 }

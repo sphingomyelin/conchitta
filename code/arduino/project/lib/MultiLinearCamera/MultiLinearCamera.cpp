@@ -1,7 +1,7 @@
 /*
  *  LinearCamerARD.cpp
  *  
- *	Creatded by ROBOPOLY
+ *	Created by ROBOPOLY
  *  Modified by Arnaud Garnier on 05.03.13.
  *  Modified by Jan Hermann on 26.04.15.
  *  Copyright 2013 EPFL. All rights reserved.

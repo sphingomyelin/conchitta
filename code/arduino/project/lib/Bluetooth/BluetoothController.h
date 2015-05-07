@@ -28,11 +28,14 @@
 
 class BluetoothController {
   public:
-    void processBluetooth();
+    void process();
     void send(int);
     void send(float);
     void send(String);
-    bool getButtonState(int);
+    void getButtonState(int);
+    int getSpeed();
+    int getSteer(); 
+    bool buttonIsOn(int button);
 
   private:
     int _sendInt;
@@ -42,6 +45,9 @@ class BluetoothController {
     byte buttonStatus = 0;                              // first Byte sent to Android device
     long previousMillis = 0;                            // will store last time Buttons status was updated
     long sendInterval = SLOW;                           // interval between Buttons status transmission (milliseconds)
+    int _joySteer;
+    int _joySpeed;
+    bool _buttonStatus[6] = {false, false, false, false, false, false};
 
     String getButtonStatusString();
     void sendBlueToothData();

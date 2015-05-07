@@ -10,7 +10,10 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "DynamixelSerial.h"
+#include "BluetoothController.h"
 #include "constants_mega.h"
+
+#define SCAN_MAX_ANGLE 900
 
 class Brain {
 
@@ -18,13 +21,21 @@ class Brain {
 
     Brain();
 
+    int scan_angle;
+    int scan_direction;
+
     // General functions
     void blink() const;
     void setState(STATE State);
     void run();
-    void test() const;
+    void test();
+    void RCmode();
 
   private:
+    // Variables
+    long last_blink;
+    bool last_state_led;
+
     // State functions
     void start();
     void getBottle();
@@ -43,9 +54,13 @@ class Brain {
     void stopMotors() const;
 
     // Dynamixel motors
-    void turnDynamixelForward() const;
-    void turnDynamixelBackward() const;
-    void stopDynamixel() const;
+    void turnBeltForward() const;
+    void turnBeltBackward() const;
+    void stopBelt() const;
+
+    void openTrap() const;
+    void closeTrap() const;
+
 
     //	VARIABLES
     STATE _state;

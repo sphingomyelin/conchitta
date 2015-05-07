@@ -228,10 +228,13 @@ void processBuffer()
 void sendPicture(int cam)
 {
   int j,i;
+  cam = 6;
   if(cam==0)
   {
     for(j=0;j<6;j++)
     {
+      Serial.print(j);
+      Serial.print(": ");
       for(i=0;i<102;i++)
       {
         Serial.print(data[j*NPIXELS+i]);
@@ -240,7 +243,7 @@ void sendPicture(int cam)
       Serial.println();
     }
   }
-  else if(cam>0 && cam<6)
+  else if(cam>0 && cam<=6)
   {
     for(i=0;i<102;i++)
     {

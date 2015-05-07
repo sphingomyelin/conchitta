@@ -1,11 +1,11 @@
 #include <Arduino.h>
 #include "Brain.h"
 #include "constants_mega.h"
-#include "scheduler.h"
-
+//#include "scheduler.h"
 
 Brain brain;
 void initDynamixel();
+void initBluetooth();
 bool bottle;
 unsigned long bottleStartTime;
 
@@ -13,9 +13,12 @@ void setup() {
 
   // Serial USB connection to computer
   Serial.begin(115200);
-  delay(1000);
   Serial.println("Start!");
   Serial.println("");
+
+  // Serial2 Bluetooth connection to smartphone
+  // 115200 = baud rate Bluetooth module
+  initBluetooth();  
 
   // Set the LED as output
   pinMode(LED, OUTPUT);
@@ -30,8 +33,8 @@ void setup() {
   Wire.begin();
 
   // Check for bottles (test)
-  bottle = false;
-  bottleStartTime = -1;
+  // bottle = false;
+  // bottleStartTime = -1;
 
   // Scheduler (NOT USED)
   //init_scheduler();
@@ -45,7 +48,7 @@ void loop() {
   //delay(1000);
   //brain.test();
   // brain.test();
-  delay(10000);
+  //delay(10000);
   // Serial.println("move yo 2!");
 
 
@@ -78,8 +81,7 @@ void loop() {
   // Serial.println(bottleStartTime);
 
   // ---------- TEST I2C ---------------
-  Serial.println("Testing motors over I2C");
-  brain.test();
+  brain.RCmode();
 
   // while(Wire.available()) { 
   //   char c = Wire.read(); // receive a byte as character
@@ -92,14 +94,25 @@ void loop() {
   //   Serial.print(c);         // print the character
   // }
 
-
-
+  Bluetooth.send(5);
+  Bluetooth.send(4.89f);
+  Bluetooth.send("Hello World!");
+  //if(Serial2.available()) {
+  //  Bluetooth.process();
+  //}
 }
+
 
 void initDynamixel() {
   Dynamixel.begin(1000000,2);  // Initialize the servo at 1Mbps and Pin Control 2
-  Dynamixel.setEndless(DYMX_ID_R, ON);
-  Dynamixel.setEndless(DYMX_ID_L, ON);
+  // Dynamixel.setEndless(DYMX_ID_R, ON);
+  // Dynamixel.setEndless(DYMX_ID_L, ON);
+  // Dynamixel.setEndless(DYMX_ID_TRAP, OFF);
 
   delay(1000);
+}
+
+void initBluetooth() {
+  Serial2.begin(115200);
+  while(Serial2.available())  Serial2.read();// empty RX buffer
 }

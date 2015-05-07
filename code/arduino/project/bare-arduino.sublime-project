@@ -2,7 +2,7 @@
 	"folders":
 		[
 			{
-				"path": "/Users/Ladislas/dev/leka/Bare-Arduino-Project"
+				"path": "/home/jan/GitHub/conchitta/code/arduino/project"
 			}
 		],
 
@@ -44,6 +44,9 @@
 				"-I${folder:${project_path:moti.sublime-project}}/lib/**",
 				"-I/usr/local/Cellar/avr-libc/**",
 				"-I/Applications/Arduino.app/**"
+        "-I/usr/lib/avr/include/**",
+        "-I/usr/share/arduino/**",
+        "-I/usr/share/arduino/libraries/**",
 			]
 		}
 }

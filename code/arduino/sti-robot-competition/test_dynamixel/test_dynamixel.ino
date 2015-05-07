@@ -1,7 +1,7 @@
 #include "DynamixelSerial.h"
 
 
-#define DYMX_ID 11
+#define DYMX_ID 6
 #define SCAN_MAX_ANGLE 900
 #define SCAN_SPEED 10
 #define SCAN_SIZE  20
@@ -17,11 +17,11 @@ void setup(){
   Serial.begin(57600);
 
   Dynamixel.begin(1000000,2);  // Initialize the servo at 1Mbps and Pin Control 2
-  Dynamixel.setEndless(DYMX_ID, ON);
+  Dynamixel.setEndless(DYMX_ID, OFF);
   scan_angle=0;
   scan_direction=SCAN_SPEED;
   
-  Dynamixel.turn(DYMX_ID, true, 1000);
+  //Dynamixel.turn(DYMX_ID, true, 1000);
 
   delay(1000);
   
@@ -30,19 +30,19 @@ void setup(){
 
 
 void loop(){
-  /*if (scan_angle> SCAN_MAX_ANGLE) {
+  if (scan_angle> SCAN_MAX_ANGLE) {
     scan_direction=-SCAN_SPEED;
   } else {
     if (scan_angle<-SCAN_MAX_ANGLE) {
       scan_direction= SCAN_SPEED;
     }
 
-  }*/
-  //scan_angle+=scan_direction;
-  Serial.println("move!");
+  }
+  scan_angle+=scan_direction;
+  Serial.println((500+(6*scan_angle/18)));
   
-  //Dynamixel.moveSpeed(DYMX_ID,(500+(6*scan_angle/18)),1000);
+  Dynamixel.moveSpeed(DYMX_ID,(500+(6*scan_angle/18)),1000);
   
-  //delay(1000);
- delay (20); 
+//  delay(1000);
+  delay (20); 
 }

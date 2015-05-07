@@ -66,7 +66,7 @@ CURRENT_DIR       = $(shell basename $(CURDIR))
 OBJDIR            = $(PROJECT_DIR)/bin/$(BOARD_TAG)/$(CURRENT_DIR)
 
 ### ARDUINO_LIBS (because automatic detection doesn't work)
-ARDUINO_LIBS = Brain Wire Dynamixel
+ARDUINO_LIBS = Brain Wire Dynamixel Bluetooth
 
 ### path to Arduino.mk, inside the ARDMK_DIR, don't touch.
 include $(ARDMK_DIR)/Arduino.mk

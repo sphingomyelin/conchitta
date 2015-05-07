@@ -15,6 +15,7 @@ enum STATE
 
 #define DYMX_ID_R 6
 #define DYMX_ID_L 4
+#define DYMX_ID_TRAP 1
 
 #endif
 

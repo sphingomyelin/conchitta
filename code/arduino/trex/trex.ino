@@ -19,8 +19,8 @@ int highVolts;
 int startVolts;
 int speed_R = 0;
 int speed_L = 0;
-int Speed = SPEED;  //entre 0 et 100 
-int Steer = 0;  //entre 0 et 90
+int Speed = 0;  //entre 0 et 136 (full speed a 14V) 
+int Steer = 0;  //entre 0 et 136
 bool Stop;                                                    // true=Motors off, false=Motors on
 byte Charged=1;                                               // 0=Flat battery  1=Charged battery
 int Leftmode=1;                                               // 0=reverse, 1=brake, 2=forward
@@ -54,9 +54,9 @@ void setup()
   // enable pull-ups
   digitalWrite(18,1);
   digitalWrite(19,1);
-  //  Wire.begin(4);                // join i2c bus with address #4
-  //  Wire.onReceive(receiveEvent); // register event
-  //  Wire.onRequest(requestEvent); // register event
+  Wire.begin(4);                // join i2c bus with address #4
+  Wire.onReceive(receiveEvent); // register event
+  Wire.onRequest(requestEvent); // register event
 
   // Charging
   pinMode(Charger,OUTPUT);                                   // change Charger pin to output
@@ -73,14 +73,7 @@ void setup()
 void loop()
 {
 
-  //delay(200);
-  //delay(20);
   //------------------------------------------------------------ Check battery voltage and current draw of motors ---------------------
-  Serial.print("Pos R: ");
-  Serial.print(GetPosRight());
-  Serial.print(", Pos L: ");
-  Serial.println(GetPosLeft());
-
 
   Volts=analogRead(Battery);                                  // read the battery voltage
   LeftAmps=analogRead(LmotorC);                               // read left motor current draw
@@ -133,13 +126,13 @@ void loop()
   //----------------------------------------------------------- GOOD BATTERY speed controller opperates normally ----------------------
   else 
   {
-    /*if (millis()-last_update>1000) {
-      Speed=0;
-      Steer=0;
-      }*/
-
+ //   if (millis()-last_update>1000) {                        // if communication brakes, stops motor after 3 seconds
+ //     Speed=0;
+ //     Steer=0;
+ //     Stop=true;
+ //   }
+    
     CalculateSpeed();
-
 
     // --------------------------------------------------------- Code to drive dual "H" bridges --------------------------------------
     if (Charged==1 && !Stop)                                           // Only power motors if battery voltage is good
@@ -195,92 +188,76 @@ void loop()
   }
 }
 
-void CalculateSpeed() // do separate function for regulation?
+void CalculateSpeed()
 {
-  Serial.println(millis());
+  //Serial.println(millis());
   int speed_difference_R, speed_difference_L;
   float speed_p_R, speed_p_L;
   float speed_p_R_arw, speed_p_L_arw;
   float elim_R, elim_L;
 
-  Serial.print("inv_kpi");            
-  Serial.print(" ");
-  Serial.println(inv_Kpi); 
-
-
-  // attention aux floating points, bien serai qqch comme 2*speed + steer/2
-  // speed_L= 2*Speed+Steer;                  // speed etre 0 et 100 (en %) 
-  // speed_R= 2*Speed-Steer;                  // steer entre 0 et 90 (en °)
-  // speed_LR entre 0 et 290 :-)
-
-  if (abs(Speed+Steer)<200) {
+  //calculate and limits speed value for each side
+  if (abs(Speed+Steer)<130) {
     speed_L=Speed+Steer;
     speed_R=Speed-Steer;
+        /*
+        Serial.print("Speed");             // print the character
+        Serial.print(" ");
+        Serial.println(Speed);         // print the speed
+        Serial.print("Steer");             // print the character
+        Serial.print(" ");
+        Serial.println(Steer);         // print the angle
+        */
   }
   else {
-    speed_L=(int)(Speed+Steer)/(1+(Speed+Steer)/200.0);
-    speed_R=(int)(Speed-Steer)/(1+(Speed+Steer)/200.0);
+    speed_L=(int)(Speed+Steer)/(1+(Speed+Steer)/130.0);
+    speed_R=(int)(Speed-Steer)/(1+(Speed+Steer)/130.0);
   }
-
-  Serial.println("Speed calc: ");
-  Serial.print("speed_R");            
-  Serial.print(" ");
-  Serial.println(speed_R);         
-  Serial.print("speed_L");              
-  Serial.print(" ");
-  Serial.println(speed_L);  
-
-  // Calculate the encoder speed into RPM //not
+        /*Serial.print("speed_R");             // print the character
+        Serial.print(" ");
+        Serial.println(speed_R);         // print the angle
+        */
+ // target value in encoder speed
   MeasuredSpeed_L=GetSpeedLeft();        // Speed updating at 100 Hz. v_rpm = n_enc * 100Hz/64 * 60sec/70gearratio; 
   MeasuredSpeed_R=GetSpeedRight();       // v_rpm = n_enc * 1.339285714
-  MeasuredSpeed_L=MeasuredSpeed_L; // Times 1.5625
-  MeasuredSpeed_R=MeasuredSpeed_R; // Times 1.5625
 
-  Serial.println("Encoders: ");
-  Serial.print("Right speed");            
-  Serial.print(" ");
-  Serial.println(MeasuredSpeed_R);         
-  Serial.print("Left speed");              
-  Serial.print(" ");
-  Serial.println(MeasuredSpeed_L);  
-
-  Serial.println("Voltage: ");          
-  Serial.println(Volts); 
-
-  //Right
+  //PI controller-Right side
   speed_difference_R = speed_R - MeasuredSpeed_R;
-  speed_p_R = integrator_R + Kpi * speed_difference_R;  //comment fait calcul? float?int???
+  speed_p_R = integrator_R + (Kpi * speed_difference_R);
   // arw
   if(speed_p_R > 255) speed_p_R_arw = 255;
   else if(speed_p_R < -255) speed_p_R_arw = -255;
   else speed_p_R_arw = speed_p_R;
-  elim_R = speed_difference_R - (speed_p_R - speed_p_R_arw)*inv_Kpi;
-  integrator_R = integrator_R + Ki*elim_R;
+  elim_R = speed_difference_R - ((speed_p_R - speed_p_R_arw)*inv_Kpi);
+  integrator_R = integrator_R + (Ki*elim_R);
 
-  Serial.println("Calculations: ");
-  Serial.print("speed_difference");            
-  Serial.print(" ");
-  Serial.println(speed_difference_R);         
-  Serial.print("speed_p_R");              
-  Serial.print(" ");
-  Serial.println(speed_p_R);  
-  Serial.print("elim_R");            
-  Serial.print(" ");
-  Serial.println(elim_R);
-  Serial.print("integrator");            
-  Serial.print(" ");
-  Serial.println(integrator_R);              
+        /*Serial.print("speed_p_R");             // print the character
+        Serial.print(" ");
+        Serial.println(speed_p_R);         // print the angle
+        Serial.print("speed_pR_arw");             // print the character
+        Serial.print(" ");
+        Serial.println(speed_p_R_arw);         // print the speed
+        Serial.print("measured");             // print the character
+        Serial.print(" ");
+        Serial.println(MeasuredSpeed_L);         // print the angle
+        Serial.print(" ");             // print the character
+        Serial.print("integrator_r");             // print the character
+        Serial.print(" ");
+        Serial.println(integrator_R);         // print the angle
+        Serial.println(" ");*/
+        
 
-  //Left
+  //PI controller-Left side
   speed_difference_L = speed_L - MeasuredSpeed_L;
-  speed_p_L = integrator_L + Kpi * speed_difference_L;
+  speed_p_L = integrator_L + (Kpi * speed_difference_L);
   // arw
   if(speed_p_L > 255) speed_p_L_arw = 255;
   else if(speed_p_L < -255) speed_p_L_arw = -255;
   else speed_p_L_arw = speed_p_L;
-  elim_L = speed_difference_L - (speed_p_L - speed_p_L_arw)*inv_Kpi;
-  integrator_L = integrator_L + Ki*elim_L;
+  elim_L = speed_difference_L - ((speed_p_L - speed_p_L_arw)*inv_Kpi);
+  integrator_L = integrator_L + (Ki*elim_L);
 
+  
   if (speed_p_L>0) Leftmode=2;
   else if (speed_p_L<0) Leftmode=0;
   else Leftmode=1;
@@ -288,20 +265,13 @@ void CalculateSpeed() // do separate function for regulation?
   else if (speed_p_R<0) Rightmode=0;
   else Rightmode=1;
 
+  LeftPWM = abs(speed_p_L_arw);                            
+  RightPWM = abs(speed_p_R_arw);     
 
-  Serial.println("Regulator: ");
-  Serial.print("Set Right speed");            
-  Serial.print(" ");
-  Serial.println(speed_p_R_arw);         
-  Serial.print("Set Left speed");              
-  Serial.print(" ");
-  Serial.println(speed_p_L_arw);  
-  Serial.println(" ");
+  if (MeasuredSpeed_R ==0 && RightPWM<50) RightPWM=0;  
+  if (MeasuredSpeed_L ==0 && LeftPWM<50) LeftPWM=0;
 
-  LeftPWM = abs(speed_p_L_arw);                              // set maximum limit 255
-  RightPWM = abs(speed_p_R_arw);                             // set maximum limit 255
-
-  Serial.println(millis());
+  //Serial.println(millis());
 }
 
 
@@ -315,6 +285,7 @@ void receiveEvent(int bytesReceived)
       case 'v': //set speed
         Speed=(int)(((unsigned int)Wire.read())<<8 | (unsigned int)Wire.read());
         //Speed = Wire.read()*256 + Wire.read();
+        Stop = false;
         last_update=millis();
         break;
 
@@ -323,14 +294,13 @@ void receiveEvent(int bytesReceived)
         //Steer = Wire.read()*256 + Wire.read();
         Stop = false;
         last_update=millis();
-        Serial.println("Starting motors...");
+        /*Serial.println("Starting motors...");
         Serial.print("v");             // print the character
         Serial.print(" ");
         Serial.println(Speed);         // print the speed
         Serial.print("w");             // print the character
         Serial.print(" ");
-        Serial.println(Steer);         // print the angle
-
+        Serial.println(Steer);         // print the angle*/
         break;
 
       case 's': //set angle to turn
@@ -338,7 +308,7 @@ void receiveEvent(int bytesReceived)
         Speed = 0;
         Steer = 0;
         last_update=millis();
-        Serial.println("Stopping motors.");
+        //Serial.println("Stopping motors.");
         break;
 
       default: //something went wrong

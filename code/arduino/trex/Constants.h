@@ -44,8 +44,7 @@
 
 //====================Controller settings==========
 
-#define Kp                5.0 // 5, oscillation at 18
-#define Ki                0.5 // 1.0
-#define Speedratio        1
-#define SPEED             100
+#define Kp                2.0 // 5, oscillation at 18
+#define Ki                0.1 // 1.0
+#define SPEED             0
 

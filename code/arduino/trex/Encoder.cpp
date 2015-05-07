@@ -91,7 +91,7 @@ void QuadratureEncoderInit(void)
   pinMode(ENC_RT_A, INPUT);
   pinMode(ENC_LT_B, INPUT);
   pinMode(ENC_RT_B, INPUT);
-  pinMode(9, OUTPUT);
+  //pinMode(9, OUTPUT);
 
   val=0;
   if (digitalReadFast(ENC_LT_A))

@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include "Brain.h"
 
 /**
@@ -24,10 +23,28 @@ void Brain::setState(STATE state) {
   _state = state;
 }
 
-void Brain::run() {
-  
-  
-  
+void Brain::execute_fsm() {
+  switch(_current_state)
+  {
+    case START:
+      stateStart();
+      break;
+    case GET_BOTTLES:
+      stateGetBottle();
+      break;
+    case GO_HOME:
+      stateGoHome();
+      break;
+    case RELEASE_BOTTLES:
+      stateReleaseBottles();
+      break;
+    case AVOID_OBSTACLE:
+      stateAvoidObstacle();
+      break;
+    case AVOID_OBSTACLE_HOME:
+      stateAvoidObstacleHome();
+      break;
+  }
 }
 
 void Brain::test() {  
@@ -47,36 +64,112 @@ void Brain::test() {
 
 }
 
-void Brain::RCmode() {
+void Brain::run() {
   Serial.println(millis());
   Bluetooth.process();
-  if(Bluetooth.buttonIsOn(3)) {
-    stopMotors();
+  if(Bluetooth.buttonIsOn(2)) {
+    execute_fsm();
   } else {
-    setSpeed(Bluetooth.getSpeed(), Bluetooth.getSteer());
+    if (Bluetooth.buttonIsOn(3)) {
+      stopMotors();
+    } else {
+      setSpeed(Bluetooth.getSpeed(), Bluetooth.getSteer());
+    }
+    if (Bluetooth.buttonIsOn(5)) {
+      if (Bluetooth.buttonIsOn(6)) {
+        turnBeltBackward();
+      } else {
+        turnBeltForward();
+      }
+    } else {
+      stopBelt();
+    }
   }
 }
 
 
 // State functions
-void Brain::start() {}
+void Brain::stateStart() {
+  SEND("STATE: START");
+  _startTime = millis();
+  setState(GET_BOTTLES);
+}
 
-void Brain::getBottle() {}
+void Brain::stateGetBottle() {
+  SEND("STATE: GET_BOTTLES");
+  int last_forward_command = millis();
+  int time_turning = 0;
+  setSpeed(MAX_SPEED, 0);
+  while(1) {
+    if(getBottleCount() > MAX_BOTTLES) {
+      setState(GO_HOME);
+    } else if(obstacleInTheWay()) {
+      setState(AVOID_OBSTACLE);
+    } else {
+      if(millis() - last_forward_command < TIME_GOING_STRAIGHT) {
+        setSpeed(MAX_SPEED, 0);
+      } else if(millis() - last_forward_command < (unsigned int)(TIME_GOING_STRAIGHT + time_turning)) {
+        int direction = random(0, 1)*2-1;
+        setSpeed(direction*MAX_SPEED, -direction*MAX_SPEED);
+      } else {
+        last_forward_command = millis();
+        time_turning = random(-TIME_TURNING, TIME_TURNING);
+      }
+    }
+  }
+}
 
-void Brain::goHome() {}
+void Brain::stateGoHome() {
+  SEND("STATE: GO_HOME");
+  // TODO
+}
 
-void Brain::releaseBottles() {}
+void Brain::stateReleaseBottles() {
+  SEND("STATE: RELEASE_BOTTLES");
+  openTrap();
+  delay(5000);
+  setState(GET_BOTTLES);
+}
+
+void Brain::stateAvoidObstacle() {
+  SEND("STATE: AVOID_OBSTACLE");
+  // TODO
+}
+
+void Brain::stateAvoidObstacleHome() {
+  SEND("STATE: AVOID_OBSTACLE_HOME");
+  // TODO
+}
 
 
 // functions used by state functions
-void Brain::approachNearestBottle() {}
+void Brain::approachNearestBottle() {
+  // TODO
+}
 
 int Brain::getBottleCount() {
+  // TODO
   return 0;
 }
 
+int Brain::getTimeMillis() {
+  return millis() - _startTime; 
+}
+
+bool Brain::obstacleInTheWay() {
+  // TODO
+  if((analogRead(IR_FRONT) < IR_FRONT_TH) && (analogRead(IR_TOP) < IR_TOP_TH) && (analogRead(IR_CONTAINER) < IR_CONTAINER_TH)) {
+    return true;
+  } else {
+    return false;    
+  }
+}
+
+
 // Communication with RPi
-void Brain::getPosNearestBottle() {}
+void Brain::getPosNearestBottle() {
+  // TODO
+}
 
 // Communication with WildThumper
 void Brain::setSpeed(int speed, int steer) const {

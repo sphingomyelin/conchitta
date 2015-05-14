@@ -4,8 +4,8 @@
 // #define ICI Serial.println("ICI");
 // #define OULA Serial.println("OU LA");
 
-#include "Arduino.h"
-#include <MultiLinearCamera.h>
+#include <Arduino.h>
+#include "MultiLinearCamera.h"
 #include "calibration.h"
 
 //Classes definitions
@@ -144,13 +144,13 @@ void loop()
   //delay(1000);               // wait for a second
 
 
-  int micros_0, micros_1, micros_2;
+  //int micros_0, micros_1, micros_2;
   do
   {
-    lcam_integrate(50); // about 940 us
+    lcam_integrate(50); // takes about 940 us
     //delay(50);
-    lcam_reset(); // about 3540 us
-    delay(1);
+    lcam_reset(); // takes about 3540 us
+    delay(2);
   }
   while(!Serial.available());
 
@@ -228,7 +228,7 @@ void processBuffer()
 void sendPicture(int cam)
 {
   int j,i;
-  cam = 6;
+  //cam = 6;
   if(cam==0)
   {
     for(j=0;j<6;j++)

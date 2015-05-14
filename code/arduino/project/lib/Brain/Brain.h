@@ -11,6 +11,7 @@
 #include <Wire.h>
 #include "DynamixelSerial.h"
 #include "BluetoothController.h"
+#include "digitalWriteFast.h"
 #include "constants_mega.h"
 
 #define SCAN_MAX_ANGLE 900
@@ -26,25 +27,31 @@ class Brain {
 
     // General functions
     void blink() const;
-    void setState(STATE State);
-    void run();
+    void setState(STATE state);
+    void execute_fsm();
     void test();
-    void RCmode();
+    void run();
 
   private:
     // Variables
     long last_blink;
     bool last_state_led;
+    unsigned int _current_state;
+    int _startTime;
 
     // State functions
-    void start();
-    void getBottle();
-    void goHome();
-    void releaseBottles();
+    void stateStart();
+    void stateGetBottle();
+    void stateGoHome();
+    void stateReleaseBottles();
+    void stateAvoidObstacle();
+    void stateAvoidObstacleHome();
 
     // functions used by state functions
     void approachNearestBottle();
     int getBottleCount();
+    int getTimeMillis();
+    bool obstacleInTheWay();
 
     // Communication with RPi
     void getPosNearestBottle();

@@ -38,6 +38,7 @@ class Brain {
     bool last_state_led;
     unsigned int _current_state;
     int _startTime;
+    bool _trapIsOpen;
 
     // State functions
     void stateStart();
@@ -65,8 +66,8 @@ class Brain {
     void turnBeltBackward() const;
     void stopBelt() const;
 
-    void openTrap() const;
-    void closeTrap() const;
+    void openTrap();
+    void closeTrap();
 
 
     //	VARIABLES

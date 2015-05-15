@@ -66,21 +66,21 @@ void loop() {
   // serial. It waits for 4 seconds after having detected a bottle to avoid
   // counting a bottle twice.
   
-  if(bottleStartTime == -1) {
-    if(analogRead(A7) > 180) {
-      bottle = true;
-      bottleStartTime = millis();
-    }    
-    Serial.print(bottle);
-    Serial.print("  ");
-    Serial.print(bottleStartTime);
-    Serial.print("  ");
-    Serial.println(analogRead(A7));
+  // if(bottleStartTime == -1) {
+  //   if(analogRead(A7) > 180) {
+  //     bottle = true;
+  //     bottleStartTime = millis();
+  //   }    
+  //   Serial.print(bottle);
+  //   Serial.print("  ");
+  //   Serial.print(bottleStartTime);
+  //   Serial.print("  ");
+  //   Serial.println(analogRead(A7));
 
-  } else if(millis() - bottleStartTime > 100) {
-    bottleStartTime = -1;
-    bottle = false;
-  }
+  // } else if(millis() - bottleStartTime > 100) {
+  //   bottleStartTime = -1;
+  //   bottle = false;
+  // }
 
   // ---------- TEST I2C ---------------
   // brain.test();
@@ -96,7 +96,7 @@ void loop() {
   //   Serial.print(c);         // print the character
   // }
 
-  //brain.run();
+  brain.run();
 
   Bluetooth.send(5);
   Bluetooth.send(4.89f);

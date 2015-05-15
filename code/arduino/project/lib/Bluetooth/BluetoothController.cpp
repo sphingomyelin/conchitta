@@ -155,15 +155,15 @@ void BluetoothController::getButtonState(int bStatus)  {
       buttonStatus |= B001000;       // ON
       Serial.println("\n** Button_4: ON **");
       _buttonStatus[3] = true;
-      Serial.println("Datafield update <FAST>");
-      sendInterval = FAST;
+      //Serial.println("Datafield update <FAST>");
+      //sendInterval = FAST;
       break;
     case 'H':
       buttonStatus &= B110111;    // OFF
       Serial.println("\n** Button_4: OFF **");
       _buttonStatus[3] = false;
-      Serial.println("Datafield update <SLOW>");
-      sendInterval = SLOW;
+      //Serial.println("Datafield update <SLOW>");
+      //sendInterval = SLOW;
       break;
 
       // -----------------  BUTTON #5  -----------------------

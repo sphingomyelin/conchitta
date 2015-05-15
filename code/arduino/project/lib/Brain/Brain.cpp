@@ -10,6 +10,8 @@
 Brain::Brain() {
 	// initialize variables
   //initDynamixel();
+  _trapIsOpen = false;
+  _current_state = START;
 }
 
 void Brain::blink() const {
@@ -75,14 +77,19 @@ void Brain::run() {
     } else {
       setSpeed(Bluetooth.getSpeed(), Bluetooth.getSteer());
     }
-    if (Bluetooth.buttonIsOn(5)) {
-      if (Bluetooth.buttonIsOn(6)) {
+    if(Bluetooth.buttonIsOn(5)) {
+      if(Bluetooth.buttonIsOn(6)) {
         turnBeltBackward();
       } else {
         turnBeltForward();
       }
     } else {
       stopBelt();
+    }
+    if(Bluetooth.buttonIsOn(4)) {
+      openTrap();
+    } else {
+      closeTrap();
     }
   }
 }
@@ -215,11 +222,13 @@ void Brain::stopBelt() const {
   Dynamixel.turn(DYMX_ID_L, true, 0);
 }
 
-void Brain::openTrap() const {
+void Brain::openTrap() {
   Dynamixel.moveSpeed(DYMX_ID_TRAP, 160, 1000);
+  _trapIsOpen = true;
 }
 
-void Brain::closeTrap() const {
-  Dynamixel.moveSpeed(DYMX_ID_TRAP, 490, 1000);
+void Brain::closeTrap() {
+  Dynamixel.moveSpeed(DYMX_ID_TRAP, 500, 1000);
+  _trapIsOpen = false;
   //Dynamixel.moveSpeed(DYMX_ID_TRAP, 500, 100);
 }

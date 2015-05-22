@@ -87,21 +87,22 @@ bool triangulation(float angle1, float angle2, float angle3, float x1, float y1,
 }
 
 
-bool triangulation_4Point(float angles[4], float &x_R, float &y_R, float &theta_R){
+int findBeacon(int index, float angles[4], float &x_R, float &y_R, float &theta_R) {
+	// Finds the index of the beacon corresponding to angle index
 	int mse = INF;
 	int beacon = -1;
 
 	float vec_meas[2];
 	float vec_theory[4][2];
 
-	vec_meas[0] = cos(angles[0]);
-	vec_meas[1] = sin(angles[0]);
+	vec_meas[0] = cos(angles[index]);
+	vec_meas[1] = sin(angles[index]);
 
 	//Compute angle between theoretical beacon and heading (to see which beacon corresponds to alpha1)
 	for (int i = 0; i < 4; ++i)
 	{
-		vec_theory[i][0] = beacons[0][0] - x_R;
-		vec_theory[i][1] = beacons[0][1] - y_R;
+		vec_theory[i][0] = beacons[i][0] - x_R;
+		vec_theory[i][1] = beacons[i][1] - y_R;
 		float mag = sqrt(vec_R1_x*vec_R1_x+vec_R1_y*vec_R1_y);
 		vec_theory[i][0] /= mag;
 		vec_theory[i][1] /= mag;
@@ -120,6 +121,12 @@ bool triangulation_4Point(float angles[4], float &x_R, float &y_R, float &theta_
 			beacon = i;
 		}
 	}
+	return beacon;
+}
+
+bool triangulation_4Point(float angles[4], float &x_R, float &y_R, float &theta_R){
+	// Does triangulation with 4 measurements of beacons	
+	int beacon = findFirstBeacon(0, angles, x_R, y_R, theta_R);
 
 	float temp_pos[4][2];
 	float temp_orient[4][2]

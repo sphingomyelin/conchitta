@@ -1,9 +1,14 @@
 #ifndef _CALIBRATION_
 #define _CALIBRATION_
 
-#define WINDOW_WIDTH  8
+#define WINDOW_WIDTH  5
+#define PEAK_DELTA 20
+#define INF_CAM 32000
+
 #define NBEACONS 4
 #define NPIXELS 102
+
+  // --------------------- FOR DEBUGGING SET TO ONLY TAKE 1 CAMERA!! ----------------------------------
 #define NCAMS 6
 
 int angle2px[360] = 

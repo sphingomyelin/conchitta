@@ -13,23 +13,39 @@
 void processBuffer();
 void sendPicture(int);
 
+
 struct peak_request
 {
-  int inf;
-  int sup;
   int done;
 
-  unsigned char peak;
-  int peak_index;
-
+  int peak[5][2];
+  int filtered_data[NCAMS*NPIXELS];
+  //int peak_index;
+  long mod(long a, long b)
+  { return (a%b+b)%b; }
   int process(unsigned char *data);
 
 };
 
 
-struct multiple_peak_request
+//Global variables
+
+int reset_request = 0;
+
+struct peak_request pr;
+//struct multiple_peak_request mpr;
+
+unsigned char *data;
+
+//int t_int = 10;
+//int led = 13;
+
+
+
+
+/*struct multiple_peak_request
 {
-  int infs[NBEACONS];
+  int INF_CAMs[NBEACONS];
   int sups[NBEACONS];
   int done;
 
@@ -40,34 +56,105 @@ struct multiple_peak_request
 
   void send_peak(void);
 
-};
+};*/
 
 //Methods
 
 int peak_request::process(unsigned char *data)
 {
-  peak = 0;
-  peak_index = 0;
+  // int p_INF_CAM = angle2px[INF_CAM];
+  // int p_sup = angle2px[sup];
+  for(int i = 0; i < 5; i++) {
+    peak[i][0] = 0;
+    peak[i][1] = 0;
+  }
 
-  int p_inf = angle2px[inf];
-  int p_sup = angle2px[sup];
-
-  for(int i = p_inf;i!=p_sup+1;i++)
+  // some filtering first (averaging with window width WINDOW_WIDTH)
+  int running_sum = 0;
+  for(int i = 0; i < WINDOW_WIDTH; i++) {
+    running_sum += data[mod((i-WINDOW_WIDTH/2) , (NCAMS*NPIXELS))];
+  }
+  for(int i = 0; i < NCAMS*NPIXELS; i++)
   {
-    if(i==NCAMS*NPIXELS)
-      i=0;
+    filtered_data[i] = running_sum/WINDOW_WIDTH;
+    running_sum += -data[mod((i-WINDOW_WIDTH/2) , (NCAMS*NPIXELS))] + data[mod((i+1+WINDOW_WIDTH/2) , (NCAMS*NPIXELS))];
+  }
 
-    if(data[i]>peak)
-    {
-      peak = data[i];
-      peak_index = i;
+  Serial.print(0);
+  Serial.print(": ");
+  for(int i=0;i<NCAMS*NPIXELS;i++)
+  {
+    Serial.print(filtered_data[i]);
+    Serial.print(" ");
+  }
+  Serial.println("");
+  Serial.println("");
+
+  // extract peaks 
+  // and save only the highest 4 peaks
+  int min = INF_CAM;
+  float max = -INF_CAM;
+  int max_count = 0;
+  int maxpos = 0;
+  //int minpos;
+  bool lookformax = true;
+  int current = 0;
+  for(int i = 0; i < NCAMS*NPIXELS; i++) {
+    current = filtered_data[i];
+    if(current > max) {
+      max = current;
+      maxpos = i;
+    } else if(current == max) {
+      max_count++;
+    }
+    if(current < min) {
+      min = current;
+      //minpos = i;
+    }
+
+    if(lookformax) {
+      if(current < max-PEAK_DELTA) {
+        // There's a maximum at position maxpos
+        int minpos_peak = 0;
+        int min_peak = INF_CAM;
+        for(int j = 0; j < 5; j++) {
+          if(peak[j][0] < min_peak) {
+            min_peak = peak[j][0];
+            minpos_peak = j;
+          }
+        }
+        if(max > min_peak) {
+          peak[minpos_peak][0] = max;
+          peak[minpos_peak][1] = maxpos+(max_count)/2;
+        }
+
+        Serial.print("Found peak: ");
+        Serial.print(max);
+        Serial.print(" at ");
+        Serial.println(maxpos+(max_count)/2);
+
+        min = current;
+        //minpos = i;
+        max_count = 0;
+        lookformax = false;
+      }
+    } else {
+      if(current > min+PEAK_DELTA) {
+        // there's a minimum at position minpos
+        //mintab = [mintab; mnpos mn];
+        max = current;
+        maxpos = i;
+        lookformax = true;
+      }
     }
   }
+
+
   return 1; 
 }
 
 
-int multiple_peak_request::process(unsigned char *data)
+/*int multiple_peak_request::process(unsigned char *data)
 {
 
   for(int j = 0; j>NBEACONS; j++)
@@ -75,10 +162,10 @@ int multiple_peak_request::process(unsigned char *data)
 
     peak[j] = 0;
     peak_index[j] = 0;
-    int p_inf = angle2px[infs[j]];
+    int p_INF_CAM = angle2px[INF_CAMs[j]];
     int p_sup = angle2px[sups[j]];
 
-    for(int i = p_inf;i!=p_sup+1;i++)
+    for(int i = p_INF_CAM;i!=p_sup+1;i++)
     {
       if(i==NCAMS*NPIXELS)
         i=0;
@@ -91,28 +178,15 @@ int multiple_peak_request::process(unsigned char *data)
     }
     return 1;
   }
-}
+}*/
 
-void multiple_peak_request::send_peak(void)
+/*void multiple_peak_request::send_peak(void)
 {
   for(int i=0;i<NBEACONS;i++)
   {
     Serial.println(peak_index[i]);
   }
-}
-
-
-//Gloabal variables
-
-int reset_request = 0;
-
-struct peak_request pr;
-struct multiple_peak_request mpr;
-
-unsigned char *data;
-
-int t_int = 10;
-int led = 13;
+}*/
 
 
 void setup()
@@ -123,10 +197,10 @@ void setup()
   delay(5000);
   Serial.println("Start...");
 
-  pinMode(led, OUTPUT); 
+  //pinMode(led, OUTPUT); 
 
   lcam_setup();
-  mpr.done=1;
+  //mpr.done=1;
   pr.done=1;
 
   // Retreive images from buffer
@@ -147,7 +221,8 @@ void loop()
   //int micros_0, micros_1, micros_2;
   do
   {
-    lcam_integrate(50); // takes about 940 us
+    //lcam_integrate(50); // takes about 940 us at 50 us
+    lcam_integrate(2000);
     //delay(50);
     lcam_reset(); // takes about 3540 us
     delay(2);
@@ -164,22 +239,28 @@ void loop()
   {
     pr.done = 1;
     pr.process(data);
-    Serial.println(pr.peak_index);
-    Serial.println(pr.peak);
+    //sendPicture(1);
+    for(int i = 0; i < 5; i++) {
+      // For debugging
+      // End debugging
+      Serial.print(pr.peak[i][0]);
+      Serial.print(" at index ");
+      Serial.println(pr.peak[i][1]);
+    }
   }
 
-  if(!(mpr.done))
+  /*if(!(mpr.done))
   {
     mpr.done = 1;
     mpr.process(data);
     mpr.send_peak();
-  }
+  }*/
 
 
   //delay(50);
 }
 
-//This function reads the communication buffer and extracts the messages
+//current function reads the communication buffer and extracts the messages
 void processBuffer()
 {
   while(Serial.available())
@@ -187,26 +268,26 @@ void processBuffer()
     char input = Serial.read();
 
     int cam;
-    int i;
+    //int i;
 
     switch (input) {
 
       case 'P': //Find a peak in a given range.
         pr.done = 0;
 
-        pr.inf = Serial.parseInt();
-        pr.sup = Serial.parseInt();
+        //pr.INF_CAM = Serial.parseInt();
+        //pr.sup = Serial.parseInt();
         break;
 
-      case 'M': //Find multiple peaks in the given ranges
+      /*case 'M': //Find multiple peaks in the given ranges
         mpr.done = 0;
 
         for(i=0;i<NBEACONS;i++)
         {
-          mpr.infs[i] = Serial.parseInt();
+          mpr.INF_CAMs[i] = Serial.parseInt();
           mpr.sups[i] = Serial.parseInt();
         }
-        break;
+        break;*/
 
       case 'C':
         cam = Serial.parseInt();
@@ -235,7 +316,7 @@ void sendPicture(int cam)
     {
       Serial.print(j);
       Serial.print(": ");
-      for(i=0;i<102;i++)
+      for(i=0;i<NPIXELS;i++)
       {
         Serial.print(data[j*NPIXELS+i]);
         Serial.print(" ");
@@ -245,7 +326,7 @@ void sendPicture(int cam)
   }
   else if(cam>0 && cam<=6)
   {
-    for(i=0;i<102;i++)
+    for(i=0;i<NPIXELS;i++)
     {
       Serial.print(data[(cam-1)*NPIXELS+i]);
       Serial.print(" ");

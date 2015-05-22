@@ -16,11 +16,6 @@
 #include <avr/interrupt.h>
 
 unsigned char lcam_buffer[612];
-/*unsigned char lcam_buffer1[102];
-  unsigned char lcam_buffer2[102];
-  unsigned char lcam_buffer3[102];
-  unsigned char lcam_buffer4[102];
-  unsigned char lcam_buffer5[102];*/
 
 void lcam_pulse()
 {
@@ -87,11 +82,11 @@ void lcam_setup(void)
   pinMode(LCAM_SCLK, OUTPUT);
   pinMode(LCAM_SDIN, OUTPUT);
   pinMode(LCAM_SDOUT0, INPUT);
-  /*pinMode(LCAM_SDOUT1, INPUT);
+  pinMode(LCAM_SDOUT1, INPUT);
   pinMode(LCAM_SDOUT2, INPUT);
   pinMode(LCAM_SDOUT3, INPUT);
   pinMode(LCAM_SDOUT4, INPUT);
-  pinMode(LCAM_SDOUT5, INPUT);*/
+  pinMode(LCAM_SDOUT5, INPUT);
   // make sure the clock is cleared
   digitalWrite(LCAM_SCLK, LOW);
   // Left offset
@@ -199,6 +194,13 @@ unsigned char* lcam_getdata()
 {
   return lcam_buffer;
 }
+
+
+
+
+
+
+
 /*
    unsigned char* lcam_getdata1()
    {

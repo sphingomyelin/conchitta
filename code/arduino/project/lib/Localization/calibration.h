@@ -3,15 +3,17 @@
 
 #define WINDOW_WIDTH  5
 #define PEAK_DELTA 20
+#define REJECTION_ANGLE 5//*2*PI/360.0
+
 #define INF_CAM 32000
+#define INF 32000
 
 #define NBEACONS 4
 #define NPIXELS 102
 
-  // --------------------- FOR DEBUGGING SET TO ONLY TAKE 1 CAMERA!! ----------------------------------
 #define NCAMS 6
 
-int angle2px[360] = 
+/*int angle2px[360] = 
 {
   0,
   2,
@@ -373,7 +375,7 @@ int angle2px[360] =
   609,
   610,
   611};
-
+*/
 
 #endif
 

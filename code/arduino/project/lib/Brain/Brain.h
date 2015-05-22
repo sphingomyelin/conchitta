@@ -22,13 +22,12 @@ class Brain {
 
     Brain();
 
-    int scan_angle;
-    int scan_direction;
+    /*int scan_angle;
+    int scan_direction;*/
 
     // General functions
     void blink() const;
     void setState(STATE state);
-    void execute_fsm();
     void test();
     void run();
 
@@ -41,6 +40,8 @@ class Brain {
     bool _trapIsOpen;
 
     // State functions
+    void execute_fsm();
+
     void stateStart();
     void stateGetBottle();
     void stateGoHome();

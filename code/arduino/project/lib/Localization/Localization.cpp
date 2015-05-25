@@ -80,10 +80,10 @@ bool Localization::calculatePose() {
       }
     }
     float vec_x = 0, vec_y = 0;
-    triangulation(angle[0], angle[1], angle[2], \ 
-      beacon[correctMatchedBeacon[0]][0], beacon[correctMatchedBeacon[0]][1], \
-      beacon[correctMatchedBeacon[1]][0], beacon[correctMatchedBeacon[1]][1], \
-      beacon[correctMatchedBeacon[2]][0], beacon[correctMatchedBeacon[2]][1], \
+    triangulation(angles[0], angles[1], angles[2], \
+      beacons[correctMatchedBeacon[0]][0], beacons[correctMatchedBeacon[0]][1], \
+      beacons[correctMatchedBeacon[1]][0], beacons[correctMatchedBeacon[1]][1], \
+      beacons[correctMatchedBeacon[2]][0], beacons[correctMatchedBeacon[2]][1], \
       x, y, vec_x, vec_y);
     theta = atan2(vec_y, vec_x);
   }
@@ -107,14 +107,16 @@ int Localization::calculatePeaks()
   Serial.println("Pixels: ");
   for(int i=0;i<NCAMS*NPIXELS;i++)
   {
-    Serial.print(filtered_data[i]);
+    Serial.print(data[i]);
     Serial.print(" ");
   }
   Serial.println("");
   Serial.println("");
 
+  // ---------- Removed the filtering because it removed information instead of making it clearer. ---------
+
   // some filtering first (averaging with window width WINDOW_WIDTH)
-  int running_sum = 0;
+  /*int running_sum = 0;
   for(int i = 0; i < WINDOW_WIDTH; i++) {
     running_sum += data[mod((i-WINDOW_WIDTH/2) , (NCAMS*NPIXELS))];
   }
@@ -131,7 +133,8 @@ int Localization::calculatePeaks()
     Serial.print(" ");
   }
   Serial.println("");
-  Serial.println("");
+  Serial.println("");*/
+
 
   // extract peaks 
   // and save only the highest 4 peaks
@@ -143,7 +146,7 @@ int Localization::calculatePeaks()
   bool lookformax = true;
   int current = 0;
   for(int i = 0; i < NCAMS*NPIXELS; i++) {
-    current = filtered_data[i];
+    current = data[i]; // inserted raw data here instead of filtered data.
     if(current > max) {
       max = current;
       maxpos = i;
@@ -274,7 +277,7 @@ bool Localization::triangulation(float angle1, float angle2, float angle3, float
   return true;
 }
 
-bool Localization::computeBeaconVectors(float x_R, float y_R, float theta_R, float &vec_theory[4][2]) {
+bool Localization::computeBeaconVectors(float x_R, float y_R, float theta_R, float vec_theory[4][2]) {
   // Compute angle between theoretical beacons and heading
     // Get vectors from previous pose and theoretical beacons
 
@@ -348,6 +351,8 @@ int Localization::matchingValidPoints(int matchedBeacon[5]) {
       nb_matched++;
   }
 
+  // TODO: CHECK ORDER OF MATCHED BEACONS
+
   return nb_matched;
 
 }
@@ -390,8 +395,8 @@ bool Localization::triangulation_4Point(float angles[4], int beacon, float &x_R,
       x_R += temp_pos[i][0];
       y_R += temp_pos[i][1];
       // Average angles
-      vec_x += temp_pos[i][0]; //Why were you subtracting here originally????????????????
-      vec_y += temp_pos[i][1];
+      vec_x += temp_orient[i][0]; //Why were you subtracting here originally????????????????
+      vec_y += temp_orient[i][1];
     }
   }
   x_R /= count_valid;

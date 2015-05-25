@@ -29,6 +29,14 @@ int Localization::getPeakIndex(int index) {
 	return peak[index][1];
 }
 
+float Localization::getX() {
+  return x;
+}
+
+float Localization::getY() {
+  return y;
+}
+
 bool Localization::calculatePose() {
   // Look at the peaks and decide on quality. Do 4-Point triangulation, 3-Point triangulation accordingly, or discard if unusable.
   /*int matchedBeacon[] = {-1, -1, -1, -1, -1};
@@ -70,6 +78,15 @@ int Localization::calculatePeaks()
     peak[i][1] = -1;
   }
 
+  Serial.println("Pixels: ");
+  for(int i=0;i<NCAMS*NPIXELS;i++)
+  {
+    Serial.print(filtered_data[i]);
+    Serial.print(" ");
+  }
+  Serial.println("");
+  Serial.println("");
+
   // some filtering first (averaging with window width WINDOW_WIDTH)
   int running_sum = 0;
   for(int i = 0; i < WINDOW_WIDTH; i++) {
@@ -81,8 +98,7 @@ int Localization::calculatePeaks()
     running_sum += -data[mod((i-WINDOW_WIDTH/2) , (NCAMS*NPIXELS))] + data[mod((i+1+WINDOW_WIDTH/2) , (NCAMS*NPIXELS))];
   }
 
-  Serial.print(0);
-  Serial.print(": ");
+  Serial.println("Filtered pixels: ");
   for(int i=0;i<NCAMS*NPIXELS;i++)
   {
     Serial.print(filtered_data[i]);

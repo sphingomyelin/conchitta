@@ -17,6 +17,8 @@ class Localization
   int calculatePeaks();
   bool calculatePose();
   void sendPicture(int cam);
+  float getX();
+  float getY();
 
   private:
   int peak[5][2];

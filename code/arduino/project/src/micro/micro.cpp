@@ -27,9 +27,9 @@ void setup()
 void loop()
 {
   //Wait for requests and take pictures in the meanwhile
-  Serial.println(millis());
 
   do {
+    Serial.println(millis());
     //lcam_integrate(50); // takes about 940 us at 50 us
     lcam_integrate(2000);
     //delay(50);
@@ -43,6 +43,17 @@ void loop()
 
     // Update the pose
     localization.calculatePose();
+
+    // Display the peaks
+    for(int i = 0; i < 5; i++) {
+      // For debugging
+      // End debugging
+      Serial.print(localization.getPeakHeight(i));
+      Serial.print(" at index ");
+      Serial.println(localization.getPeakIndex(i));
+    }    
+    Serial.println("----------------------------------------------");
+
   }
   while(!Serial.available());
 
@@ -55,7 +66,7 @@ void loop()
   if(!(localization.done))
   {
     localization.done = 1;
-    localization.calculatePeaks();
+    //localization.calculatePeaks();
     for(int i = 0; i < 5; i++) {
       // For debugging
       // End debugging
@@ -63,6 +74,11 @@ void loop()
       Serial.print(" at index ");
       Serial.println(localization.getPeakIndex(i));
     }
+    Serial.print("(");
+    Serial.print(localization.getX());
+    Serial.print(", ");
+    Serial.println(localization.getY());
+    Serial.print(")");
   }
 }
 

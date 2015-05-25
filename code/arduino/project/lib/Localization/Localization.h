@@ -33,7 +33,9 @@ class Localization
   int mod(int a, int b);
   bool triangulation(float angle1, float angle2, float angle3, float x1, float y1, float x2, float y2, float x3, float y3, float &x_R, float &y_R, float &vec_R_x, float &vec_R_y);
   bool triangulation_4Point(float angles[4], int beacon, float &x_R, float &y_R, float &theta_R);
-  int findBeacon(float angle, float rejection_range, float x_R, float y_R, float theta_R);
+  bool computeBeaconVectors(float x_R, float y_R, float theta_R, float &vec_theory[4][2]);
+  int findBeacon(float angle, float rejection_range, float vec_theory[4][2]);
+  int matchingValidPoints(int matchedBeacon[5]);
 
 };
 

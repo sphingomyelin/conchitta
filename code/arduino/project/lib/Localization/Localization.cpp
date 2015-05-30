@@ -101,7 +101,7 @@ int Localization::calculatePeaks()
   // int p_sup = angle2px[sup];
   for(int i = 0; i < 5; i++) {
     peak[i][0] = -1;
-    peak[i][1] = -1;
+    peak[i][1] = INF;
   }
 
   Serial.println("Pixels: ");
@@ -137,7 +137,7 @@ int Localization::calculatePeaks()
 
 
   // extract peaks 
-  // and save only the highest 4 peaks
+  // and save only the highest 5 peaks
   int min = INF_CAM;
   float max = -INF_CAM;
   int max_count = 0;
@@ -192,6 +192,33 @@ int Localization::calculatePeaks()
         maxpos = i;
         lookformax = true;
       }
+    }
+  }
+
+  // Sort array with Selection Sort
+  for (int i = 0; i < 5; i++) {
+    // nSmallestIndex is the index of the smallest element
+    // we've encountered so far.
+    int nSmallestIndex = i;
+
+    // Search through every element starting at nStartIndex+1
+    for (int j = i + 1; j < 5; j++)
+    {
+      // If the current element is smaller than our previously found smallest
+      if (peak[j][1] < peak[nSmallestIndex][1])
+          // Store the index in nSmallestIndex
+          nSmallestIndex = j;
+    }
+
+    // Swap our start element with our smallest element
+    swap(peak[i][0], peak[nSmallestIndex][0]);
+    swap(peak[i][1], peak[nSmallestIndex][1]);
+  }
+
+  // Put the INF position of the pixels to -1
+  for (int i = 0; i < 5; i++) {
+    if(peak[i][1] == INF) {
+      peak[i][1] = -1;
     }
   }
 
@@ -347,14 +374,20 @@ int Localization::matchingValidPoints(int matchedBeacon[5]) {
   int nb_matched = 0;
 
   for(int i=0; i<5; i++) {
-    if(matchedBeacon[i] != -1)
+    if(matchedBeacon[i] != -1) {
+      // count the valid beacons
       nb_matched++;
+      // check for duplicates
+      for(int j=i+1; j<5; j++) {
+        if(matchedBeacon[i] != -1) {
+          if(matchedBeacon[i] == matchedBeacon[j])
+            return -1;
+        }
+      }
+    }
   }
-
-  // TODO: CHECK ORDER OF MATCHED BEACONS
-
+  
   return nb_matched;
-
 }
 
 
@@ -442,4 +475,12 @@ void Localization::sendPicture(int cam)
 
 float Localization::getAngleFromIndex(int index) {
   return mod((index - 61)* -2*PI/612.0, 2*PI);
+}
+
+
+
+void Localization::swap(int &a, int &b) {
+  int temp = a;
+  a = b;
+  b = temp;
 }

@@ -36,6 +36,7 @@ class Localization
   bool computeBeaconVectors(float x_R, float y_R, float theta_R, float vec_theory[4][2]);
   int findBeacon(float angle, float rejection_range, float vec_theory[4][2]);
   int matchingValidPoints(int matchedBeacon[5]);
+  void swap(int &a, int &b);
 
 };
 

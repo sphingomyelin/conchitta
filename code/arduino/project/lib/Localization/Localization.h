@@ -19,6 +19,7 @@ class Localization
   void sendPicture(int cam);
   float getX();
   float getY();
+  float getTheta();
 
   private:
   int peak[5][2];

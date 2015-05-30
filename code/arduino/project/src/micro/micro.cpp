@@ -29,9 +29,10 @@ void loop()
   //Wait for requests and take pictures in the meanwhile
 
   do {
+    Serial.println("----------------------------------------------");
     Serial.println(millis());
     //lcam_integrate(50); // takes about 940 us at 50 us
-    lcam_integrate(2000);
+    lcam_integrate(INTEGRATION_TIME);
     //delay(50);
     lcam_reset(); // takes about 3540 us
 
@@ -40,20 +41,26 @@ void loop()
 
     // get the peaks from the pixel data
     localization.calculatePeaks();
+    // Display the peaks
+    for(int i = 0; i < 5; i++) {
+      Serial.print("Peak height ");
+      Serial.print(localization.getPeakHeight(i));
+      Serial.print(" at index/angle ");
+      Serial.print(localization.getPeakIndex(i));
+      Serial.print("/");
+      Serial.println(localization.getPeakAngle(i));
+    }
 
     // Update the pose
     localization.calculatePose();
 
-    // Display the peaks
-    for(int i = 0; i < 5; i++) {
-      // For debugging
-      // End debugging
-      Serial.print(localization.getPeakHeight(i));
-      Serial.print(" at index ");
-      Serial.println(localization.getPeakIndex(i));
-    }    
-    Serial.println("----------------------------------------------");
-
+    Serial.print("Position: (");
+    Serial.print(localization.getX());
+    Serial.print(", ");
+    Serial.print(localization.getY());
+    Serial.print("), orientation: ");
+    Serial.println(localization.getTheta());
+    
   }
   while(!Serial.available());
 
@@ -63,7 +70,7 @@ void loop()
   //Requests available: process them
   processBuffer();
 
-  if(!(localization.done))
+  /*if(!(localization.done))
   {
     localization.done = 1;
     //localization.calculatePeaks();
@@ -79,7 +86,7 @@ void loop()
     Serial.print(", ");
     Serial.println(localization.getY());
     Serial.print(")");
-  }
+  }*/
 }
 
 //current function reads the communication buffer and extracts the messages
@@ -94,12 +101,12 @@ void processBuffer()
 
     switch (input) {
 
-      case 'P': //Find a peak in a given range.
+      /*case 'P': //Find a peak in a given range.
         localization.done = 0;
 
         //localization.INF_CAM = Serial.parseInt();
         //localization.sup = Serial.parseInt();
-        break;
+        break;*/
 
       /*case 'M': //Find multiple peaks in the given ranges
         mlocalization.done = 0;

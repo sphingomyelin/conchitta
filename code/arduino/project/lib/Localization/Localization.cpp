@@ -10,9 +10,9 @@ Localization::Localization() {
   beacons[3][0] = 8;
   beacons[3][1] = 0;
 
-  x = 0.5;
-  y = 0.5;
-  theta = 0;
+  x = X_START;
+  y = Y_START;
+  theta = THETA_START;
 
   done = 1;
 }
@@ -35,6 +35,10 @@ float Localization::getX() {
 
 float Localization::getY() {
   return y;
+}
+
+float Localization::getTheta() {
+  return theta;
 }
 
 bool Localization::calculatePose() {
@@ -471,13 +475,9 @@ void Localization::sendPicture(int cam)
   }
 }
 
-
-
 float Localization::getAngleFromIndex(int index) {
   return mod((index - 61)* -2*PI/612.0, 2*PI);
 }
-
-
 
 void Localization::swap(int &a, int &b) {
   int temp = a;

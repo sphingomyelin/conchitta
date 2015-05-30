@@ -4,6 +4,12 @@
 //#define WINDOW_WIDTH  5
 #define PEAK_DELTA 20
 #define REJECTION_ANGLE 30//*2*PI/360.0
+#define INTEGRATION_TIME 2000
+
+#define X_START 5
+#define Y_START 1
+#define THETA_START -90/180*PI
+
 
 #define INF_CAM 32000
 #define INF 32000

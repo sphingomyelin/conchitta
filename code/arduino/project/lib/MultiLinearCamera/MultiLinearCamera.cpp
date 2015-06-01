@@ -95,7 +95,7 @@ void lcam_setup(void)
   lcam_pulse_clock(10);
   // Left gain
   lcam_send(0x41);
-  lcam_send(15);
+  lcam_send(GAIN);
   lcam_pulse_clock(10);
   // Middle offset
   lcam_send(0x42);
@@ -103,7 +103,7 @@ void lcam_setup(void)
   lcam_pulse_clock(10);
   // Middle gain
   lcam_send(0x43);
-  lcam_send(15);
+  lcam_send(GAIN);
   lcam_pulse_clock(10);
   // Right offset
   lcam_send(0x44);
@@ -111,7 +111,7 @@ void lcam_setup(void)
   lcam_pulse_clock(10);
   // Right gain
   lcam_send(0x45);
-  lcam_send(15);
+  lcam_send(GAIN);
   lcam_pulse_clock(10);
 
   delay(1);

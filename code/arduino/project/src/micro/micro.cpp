@@ -51,6 +51,11 @@ void loop()
       Serial.println(localization.getPeakAngle(i));
     }
 
+    // Reinitializing pose estimate to START values for debugging
+    localization.setX(X_START);
+    localization.setY(Y_START);
+    localization.setTheta(THETA_START);
+    
     // Update the pose
     localization.calculatePose();
 

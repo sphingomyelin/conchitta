@@ -1,14 +1,16 @@
 #ifndef _CALIBRATION_
 #define _CALIBRATION_
 
-//#define WINDOW_WIDTH  5
-#define PEAK_DELTA 20
-#define REJECTION_ANGLE 30//*2*PI/360.0
+#define WINDOW_HALF_WIDTH_HIGHPASS 6
+#define WINDOW_HALF_WIDTH_CONV 4
+
+#define PEAK_DELTA 3000
+#define REJECTION_ANGLE 30*PI/180.0
 #define INTEGRATION_TIME 2000
 
-#define X_START 5
-#define Y_START 1
-#define THETA_START -90/180*PI
+#define X_START 2.0
+#define Y_START 3.5
+#define THETA_START  285   /180.0*PI
 
 
 #define INF_CAM 32000

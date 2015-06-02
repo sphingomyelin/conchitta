@@ -1,7 +1,9 @@
 #ifndef _CALIBRATION_
 #define _CALIBRATION_
 
-#define INTEGRATION_TIME 2000
+#define WINDOW_WIDTH  5
+#define PEAK_DELTA 20
+#define REJECTION_ANGLE 5//*2*PI/360.0
 
 #define INF_CAM 32000
 #define INF 32000

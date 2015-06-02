@@ -9,7 +9,7 @@
 
 Brain::Brain() {
 	// initialize variables
-  //initDynamixel();
+	//initDynamixel();
   _trapIsOpen = false;
   _current_state = START;
 }
@@ -67,7 +67,7 @@ void Brain::test() {
 }
 
 void Brain::run() {
-  Serial.println(millis());
+//  Serial.println(millis());
   Bluetooth.process();
   if(Bluetooth.buttonIsOn(2)) {
     execute_fsm();
@@ -140,7 +140,7 @@ void Brain::stateReleaseBottles() {
 
 void Brain::stateAvoidObstacle() {
   SEND("STATE: AVOID_OBSTACLE");
-  // TODO
+  
 }
 
 void Brain::stateAvoidObstacleHome() {
@@ -180,8 +180,16 @@ void Brain::getPosNearestBottle() {
 
 // Communication with WildThumper
 void Brain::setSpeed(int speed, int steer) const {
-  Serial.print("Sending speed to WildThumper: ");
+	float steerf = 0.0;
+	double speedf = 0.0;
+	
+  Serial.print("command speed: ");
   Serial.println(speed);
+  speedf=-pow(1.0116,analogRead(A0))+speed;
+  speed=(int)speedf;
+  Serial.print("sending speed to WildThumper: ");
+  Serial.println(speed); 
+    
   Wire.beginTransmission(4);
   Wire.write("v");                // set speed
   Wire.write((speed>>8)&0xFF);    // sends the most significant byte  
@@ -189,8 +197,19 @@ void Brain::setSpeed(int speed, int steer) const {
   Wire.endTransmission();
 
 
+  Serial.print("command steer: ");
+  Serial.println(steer);
+  Serial.print("Anal =");
+  Serial.println(analogRead(A0));
+  if (analogRead(A0)>100){
+  steerf=0.3*analogRead(A0)-30+steer;
+  steer=(int)steerf;
+}
   Serial.print("Sending steer to WildThumper: ");
   Serial.println(steer);
+  Serial.println("");
+  delay(800);
+  
   Wire.beginTransmission(4);
   Wire.write("w");                // set steer (tangential)
   Wire.write((steer>>8)&0xFF);    // sends the most significant byte

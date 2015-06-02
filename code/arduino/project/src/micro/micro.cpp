@@ -1,26 +1,26 @@
 #include <Arduino.h>
 #include "MultiLinearCamera.h"
-#include "calibration.h"
+#include "Localization.h"
 
 // Definitions
 void processBuffer();
 
 // Global variables
 int reset_request = 0;
-unsigned char *data;
+Localization localization;
 
-void sendPicture();
 
 void setup()
 {
-  Serial.begin(9600); //Serial1.begin(9600);
+  Serial.begin(115200); //Serial1.begin(9600);
 
-  delay(2000);
+  delay(5000);
+  Serial.println("Start...");
 
   lcam_setup();
 
   // Retreive images from buffer
-  data = lcam_getdata();
+  localization.data = lcam_getdata();
 
 }
 
@@ -28,16 +28,32 @@ void loop()
 {
   //Wait for requests and take pictures in the meanwhile
 
-  lcam_reset(); // takes about 3540 us
   do {
+    Serial.println(millis());
     //lcam_integrate(50); // takes about 940 us at 50 us
-    lcam_integrate(INTEGRATION_TIME);
+    lcam_integrate(2000);
     //delay(50);
+    lcam_reset(); // takes about 3540 us
 
     // load pixel values to lcam_buffer byte array
     lcam_read();
 
     // get the peaks from the pixel data
+    localization.calculatePeaks();
+
+    // Update the pose
+    localization.calculatePose();
+
+    // Display the peaks
+    for(int i = 0; i < 5; i++) {
+      // For debugging
+      // End debugging
+      Serial.print(localization.getPeakHeight(i));
+      Serial.print(" at index ");
+      Serial.println(localization.getPeakIndex(i));
+    }    
+    Serial.println("----------------------------------------------");
+
   }
   while(!Serial.available());
 
@@ -46,6 +62,24 @@ void loop()
 
   //Requests available: process them
   processBuffer();
+
+  if(!(localization.done))
+  {
+    localization.done = 1;
+    //localization.calculatePeaks();
+    for(int i = 0; i < 5; i++) {
+      // For debugging
+      // End debugging
+      Serial.print(localization.getPeakHeight(i));
+      Serial.print(" at index ");
+      Serial.println(localization.getPeakIndex(i));
+    }
+    Serial.print("(");
+    Serial.print(localization.getX());
+    Serial.print(", ");
+    Serial.println(localization.getY());
+    Serial.print(")");
+  }
 }
 
 //current function reads the communication buffer and extracts the messages
@@ -59,8 +93,27 @@ void processBuffer()
     //int i;
 
     switch (input) {
+
+      case 'P': //Find a peak in a given range.
+        localization.done = 0;
+
+        //localization.INF_CAM = Serial.parseInt();
+        //localization.sup = Serial.parseInt();
+        break;
+
+      /*case 'M': //Find multiple peaks in the given ranges
+        mlocalization.done = 0;
+
+        for(i=0;i<NBEACONS;i++)
+        {
+          mlocalization.INF_CAMs[i] = Serial.parseInt();
+          mlocalization.sups[i] = Serial.parseInt();
+        }
+        break;*/
+
       case 'C':
-        sendPicture();
+        cam = Serial.parseInt();
+        localization.sendPicture(cam);
         break;
 
       case 'R': //Reset
@@ -74,12 +127,3 @@ void processBuffer()
   }
 }
 
-void sendPicture() {
-  int i;
-  for(i=0;i<NCAMS*NPIXELS;i++)
-  {
-    Serial.print(data[i]);
-    Serial.print(" ");
-  }
-  Serial.println();
-}

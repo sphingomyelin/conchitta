@@ -14,8 +14,6 @@
 
 #include <avr/io.h>
 
-#define GAIN 31
-
 #define NPIXELS 102
 
 #define LCAM_SDIN  	3  // SDIN: master out, camera in

@@ -8,7 +8,7 @@
 
 
 Brain::Brain() {
-	// initialize variables
+  // initialize variables
   //initDynamixel();
   _trapIsOpen = false;
   _current_state = START;
@@ -51,7 +51,7 @@ void Brain::execute_fsm() {
 
 void Brain::test() {  
   blink();
-  
+
   // ------- Testing Belt -------
   // turnBeltForward();
 
@@ -105,22 +105,42 @@ void Brain::stateStart() {
 void Brain::stateGetBottle() {
   SEND("STATE: GET_BOTTLES");
   int last_forward_command = millis();
-  int time_turning = 0;
+  int time_turning = random(TIME_TURNING_MIN, TIME_TURNING_MAX);
+  int speed = 0, steer = 0;
   setSpeed(MAX_SPEED, 0);
   while(1) {
     if(getBottleCount() > MAX_BOTTLES) {
       setState(GO_HOME);
     } else if(obstacleInTheWay()) {
       setState(AVOID_OBSTACLE);
-    } else {
-      if(millis() - last_forward_command < TIME_GOING_STRAIGHT) {
-        setSpeed(MAX_SPEED, 0);
-      } else if(millis() - last_forward_command < (unsigned int)(TIME_GOING_STRAIGHT + time_turning)) {
-        int direction = random(0, 1)*2-1;
-        setSpeed(direction*MAX_SPEED, -direction*MAX_SPEED);
+    } else if(getTimeMillis() > TIME_END_GO_HOME) {
+      setState(GO_HOME);
+    }else {
+      if(getPosNearestBottle()) {
+        approachNearestBottle();
       } else {
-        last_forward_command = millis();
-        time_turning = random(-TIME_TURNING, TIME_TURNING);
+        // Random
+        if(millis() - last_forward_command < TIME_GOING_STRAIGHT) {
+          // Go straight, but avoid obstacles if possible
+          float speedf = 0.0;
+          float steerf = 0.0;
+
+          speedf=-pow(1.0116,analogRead(A0))+speed;
+          speed = (int)speedf;
+          
+          if (analogRead(A0)>100) {
+            steerf=0.3*analogRead(A0)-30+steer;
+          }
+          steer = (int)steerf;
+
+          setSpeed(speed, steer);
+        } else if(millis() - last_forward_command < (unsigned int)(TIME_GOING_STRAIGHT + time_turning)) {
+          int direction = (int)(random(0, 1))*2-1;
+          setSpeed(0, direction*MAX_SPEED);
+        } else {
+          last_forward_command = millis();
+          time_turning = random(TIME_TURNING_MIN, TIME_TURNING_MAX);
+        }
       }
     }
   }
@@ -133,8 +153,21 @@ void Brain::stateGoHome() {
 
 void Brain::stateReleaseBottles() {
   SEND("STATE: RELEASE_BOTTLES");
+  // TODO: TURN 180 DEGREES properly
+  int started_turning = millis();
+  while(started_turning - millis() < TIME_TURNING_RELEASE_BOTTLES) {
+    setSpeed(0, MAX_SPEED/2);  
+  }
+  setSpeed(0, 0);
   openTrap();
   delay(5000);
+  closeTrap();
+  if(getTimeMillis() > TIME_END_GO_HOME) {
+    while(1) {
+      // TODO: SOMETHING FUNNY
+      delay(1000);
+    }
+  }
   setState(GET_BOTTLES);
 }
 
@@ -151,7 +184,7 @@ void Brain::stateAvoidObstacleHome() {
 
 // functions used by state functions
 void Brain::approachNearestBottle() {
-  // TODO
+  // TODO: PID on the x and y of the nearest bottle
 }
 
 int Brain::getBottleCount() {
@@ -165,7 +198,10 @@ int Brain::getTimeMillis() {
 
 bool Brain::obstacleInTheWay() {
   // TODO
-  if((analogRead(IR_FRONT) < IR_FRONT_TH) && (analogRead(IR_TOP) < IR_TOP_TH) && (analogRead(IR_CONTAINER) < IR_CONTAINER_TH)) {
+  if((analogRead(IR_OBST_FL) < IR_OBST_FL_TH) || \
+     (analogRead(IR_OBST_FR) < IR_OBST_FR_TH) || \
+     (analogRead(IR_OBST_SL) < IR_OBST_SL_TH) || \
+     (analogRead(IR_OBST_SR) < IR_OBST_SR_TH)) {
     return true;
   } else {
     return false;    
@@ -174,8 +210,56 @@ bool Brain::obstacleInTheWay() {
 
 
 // Communication with RPi
-void Brain::getPosNearestBottle() {
-  // TODO
+bool Brain::getPosNearestBottle() {
+  if (Serial.available() > 0) {
+    delay(5);
+    char xRPIstr[4], yRPIstr[4];
+    char xRPIchar=-1, yRPIchar=-1;
+    char charRPI = Serial.read();
+    byte index = 0;
+    if (charRPI=='x') {
+      while ((xRPIchar=Serial.read()) > 47) {
+        xRPIchar = xRPIchar - '0';
+        xRPIstr[index] = xRPIchar;
+        index++;
+      }
+      if (index==1)
+        _xBottle = xRPIstr[0];
+      else if (index==2)
+        _xBottle = xRPIstr[0]*10+xRPIstr[1];
+      else if (index==3)
+        _xBottle = xRPIstr[0]*100+xRPIstr[1]*10+xRPIstr[2];
+      //index=0;
+      //Serial.print("x =");
+      //Serial.println(xRPI);
+    } else if (charRPI=='y') {
+      while ((yRPIchar=Serial.read()) > 47) {
+        yRPIchar = yRPIchar -'0';
+        yRPIstr[index] = yRPIchar;
+        index++;
+      }
+      if (index==1)
+        _yBottle = yRPIstr[0];
+      else if (index==2)
+        _yBottle = yRPIstr[0]*10+yRPIstr[1];
+      else if (index==3)
+        _yBottle = yRPIstr[0]*100+yRPIstr[1]*10+yRPIstr[2];
+      //index=0;
+      //Serial.print("y =");
+      //Serial.println(yRPI);
+    } else{
+      //Serial.println("wrong character");
+    }
+    //charRPI=-1;
+    Serial.flush();
+
+    Bluetooth.send((int)xRPI);
+    Bluetooth.send((float)yRPI);
+    Bluetooth.send("received pos");
+    return true;
+  } else {
+    return false;
+  }
 }
 
 // Communication with WildThumper

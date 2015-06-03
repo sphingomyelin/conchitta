@@ -11,7 +11,7 @@ Brain::Brain() {
   // initialize variables
   //initDynamixel();
   _trapIsOpen = false;
-  _current_state = START;
+  _state = START;
 }
 
 void Brain::blink() const {
@@ -26,13 +26,15 @@ void Brain::setState(STATE state) {
 }
 
 void Brain::execute_fsm() {
-  switch(_current_state)
+  switch(_state)
   {
     case START:
       stateStart();
       break;
     case GET_BOTTLES:
-      stateGetBottle();
+      stateGetBottlesTransition();
+    case GET_BOTTLES_STATE:
+      stateGetBottles();
       break;
     case GO_HOME:
       stateGoHome();
@@ -72,6 +74,7 @@ void Brain::run() {
   if(Bluetooth.buttonIsOn(2)) {
     execute_fsm();
   } else {
+    Bluetooth.send("RC Mode");
     if (Bluetooth.buttonIsOn(3)) {
       stopMotors();
     } else {
@@ -98,49 +101,56 @@ void Brain::run() {
 // State functions
 void Brain::stateStart() {
   SEND("STATE: START");
+  Bluetooth.send("Start");
   _startTime = millis();
   setState(GET_BOTTLES);
 }
 
-void Brain::stateGetBottle() {
+void Brain::stateGetBottlesTransition() {
   SEND("STATE: GET_BOTTLES");
-  int last_forward_command = millis();
-  int time_turning = random(TIME_TURNING_MIN, TIME_TURNING_MAX);
-  int speed = 0, steer = 0;
+  _getbottles_last_forward_command = millis();
+  _getbottles_time_turning = random(TIME_TURNING_MIN, TIME_TURNING_MAX);
+  _getbottles_speed = 0;
+  _getbottles_steer = 0;
   setSpeed(MAX_SPEED, 0);
-  while(1) {
-    if(getBottleCount() > MAX_BOTTLES) {
-      setState(GO_HOME);
-    } else if(obstacleInTheWay()) {
-      setState(AVOID_OBSTACLE);
-    } else if(getTimeMillis() > TIME_END_GO_HOME) {
-      setState(GO_HOME);
-    }else {
-      if(getPosNearestBottle()) {
-        approachNearestBottle();
-      } else {
-        // Random
-        if(millis() - last_forward_command < TIME_GOING_STRAIGHT) {
-          // Go straight, but avoid obstacles if possible
-          float speedf = 0.0;
-          float steerf = 0.0;
+  setState(GET_BOTTLES_STATE);
+}
 
-          speedf=-pow(1.0116,analogRead(A0))+speed;
-          speed = (int)speedf;
-          
-          if (analogRead(A0)>100) {
-            steerf=0.3*analogRead(A0)-30+steer;
-          }
-          steer = (int)steerf;
+void Brain::stateGetBottles() {
+  SEND("STATE: GET_BOTTLES_STATE");
+  Bluetooth.send(_getbottles_time_turning+TIME_GOING_STRAIGHT);
+  if(getBottleCount() > MAX_BOTTLES) {
+    setState(GO_HOME);
+  } else if(obstacleInTheWay()) {
+    setState(AVOID_OBSTACLE);
+  } else if(getTimeMillis() > TIME_END_GO_HOME) {
+    setState(GO_HOME);
+  } else {
+    if(getPosNearestBottle()) {
+      approachNearestBottle();
+    } else {
+      // Random
+      if(millis() - _getbottles_last_forward_command < TIME_GOING_STRAIGHT) {
+        // Go straight, but avoid obstacles if possible
+        /*float speedf = 0.0;
+        float steerf = 0.0;
 
-          setSpeed(speed, steer);
-        } else if(millis() - last_forward_command < (unsigned int)(TIME_GOING_STRAIGHT + time_turning)) {
-          int direction = (int)(random(0, 1))*2-1;
-          setSpeed(0, direction*MAX_SPEED);
-        } else {
-          last_forward_command = millis();
-          time_turning = random(TIME_TURNING_MIN, TIME_TURNING_MAX);
+        speedf=-pow(1.0116,analogRead(A0))+speed;
+        speed = (int)speedf;
+        
+        if (analogRead(A0)>100) {
+          steerf=0.3*analogRead(A0)-30+steer;
         }
+        steer = (int)steerf;
+
+        setSpeed(speed, steer);*/
+        setSpeed(MAX_SPEED, 0);
+      } else if(millis() - _getbottles_last_forward_command < (TIME_GOING_STRAIGHT + _getbottles_time_turning)) {
+        int direction = (int)(random(0, 1))*2-1;
+        setSpeed(0, direction*MAX_SPEED);
+      } else {
+        _getbottles_last_forward_command = millis();
+        _getbottles_time_turning = random(TIME_TURNING_MIN, TIME_TURNING_MAX);
       }
     }
   }
@@ -156,7 +166,7 @@ void Brain::stateReleaseBottles() {
   // TODO: TURN 180 DEGREES properly
   int started_turning = millis();
   while(started_turning - millis() < TIME_TURNING_RELEASE_BOTTLES) {
-    setSpeed(0, MAX_SPEED/2);  
+    setSpeed(0, MAX_SPEED/2);
   }
   setSpeed(0, 0);
   openTrap();
@@ -192,20 +202,20 @@ int Brain::getBottleCount() {
   return 0;
 }
 
-int Brain::getTimeMillis() {
+long Brain::getTimeMillis() {
   return millis() - _startTime; 
 }
 
 bool Brain::obstacleInTheWay() {
   // TODO
-  if((analogRead(IR_OBST_FL) < IR_OBST_FL_TH) || \
-     (analogRead(IR_OBST_FR) < IR_OBST_FR_TH) || \
-     (analogRead(IR_OBST_SL) < IR_OBST_SL_TH) || \
-     (analogRead(IR_OBST_SR) < IR_OBST_SR_TH)) {
-    return true;
-  } else {
+  // if((analogRead(IR_OBST_FL) > IR_OBST_FL_TH) || \
+  //    (analogRead(IR_OBST_FR) > IR_OBST_FR_TH) || \
+  //    (analogRead(IR_OBST_SL) > IR_OBST_SL_TH) || \
+  //    (analogRead(IR_OBST_SR) > IR_OBST_SR_TH)) {
+  //   return true;
+  // } else {
     return false;    
-  }
+  // }
 }
 
 
@@ -253,8 +263,8 @@ bool Brain::getPosNearestBottle() {
     //charRPI=-1;
     Serial.flush();
 
-    Bluetooth.send((int)xRPI);
-    Bluetooth.send((float)yRPI);
+    Bluetooth.send((int)_xBottle);
+    Bluetooth.send((float)_yBottle);
     Bluetooth.send("received pos");
     return true;
   } else {

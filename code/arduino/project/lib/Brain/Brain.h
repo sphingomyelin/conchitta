@@ -11,10 +11,8 @@
 #include <Wire.h>
 #include "DynamixelSerial.h"
 #include "BluetoothController.h"
-#include "digitalWriteFast.h"
+// #include "digitalWriteFast.h"
 #include "constants_mega.h"
-
-#define SCAN_MAX_ANGLE 900
 
 class Brain {
 
@@ -35,7 +33,7 @@ class Brain {
     // Variables
     long last_blink;
     bool last_state_led;
-    unsigned int _current_state;
+    STATE _state; //unsigned int _current_state;
     long _startTime;
     bool _trapIsOpen;
 
@@ -45,7 +43,8 @@ class Brain {
     void execute_fsm();
 
     void stateStart();
-    void stateGetBottle();
+    void stateGetBottles();
+    void stateGetBottlesTransition();
     void stateGoHome();
     void stateReleaseBottles();
     void stateAvoidObstacle();
@@ -54,7 +53,7 @@ class Brain {
     // functions used by state functions
     void approachNearestBottle();
     int getBottleCount();
-    int getTimeMillis();
+    long getTimeMillis();
     bool obstacleInTheWay();
 
     // Communication with RPi
@@ -73,8 +72,11 @@ class Brain {
     void closeTrap();
 
 
-    //	VARIABLES
-    STATE _state;
+    //	VARIABLES OF STATES
+    int _getbottles_last_forward_command;
+    int _getbottles_time_turning;
+    int _getbottles_speed;
+    int _getbottles_steer;
 
     //	CONSTANTS
 

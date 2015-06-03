@@ -12,9 +12,10 @@ unsigned long bottleStartTime;
 void setup() {
 
   // Serial USB connection to computer
-  Serial.begin(9600);
-  // Serial.println("Start!");
-  // Serial.println("");
+  Serial.begin(115200);
+  delay(2000);
+  Serial.println("Start!");
+  Serial.println("");
 
   // Serial2 Bluetooth connection to smartphone
   // 115200 = baud rate Bluetooth module
@@ -97,6 +98,7 @@ void loop() {
   // }
 
   brain.run();
+  // delay(200);
 
   // Bluetooth.send(5);
   // Bluetooth.send(4.89f);
@@ -109,9 +111,9 @@ void loop() {
 
 void initDynamixel() {
   Dynamixel.begin(1000000,2);  // Initialize the servo at 1Mbps and Pin Control 2
-  // Dynamixel.setEndless(DYMX_ID_R, ON);
-  // Dynamixel.setEndless(DYMX_ID_L, ON);
-  // Dynamixel.setEndless(DYMX_ID_TRAP, OFF);
+  Dynamixel.setEndless(DYMX_ID_R, ON);
+  Dynamixel.setEndless(DYMX_ID_L, ON);
+  Dynamixel.setEndless(DYMX_ID_TRAP, OFF);
 
   delay(1000);
 }

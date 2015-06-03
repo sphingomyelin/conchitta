@@ -78,6 +78,9 @@ void loop()
   Volts=analogRead(Battery);                                  // read the battery voltage
   LeftAmps=analogRead(LmotorC);                               // read left motor current draw
   RightAmps=analogRead(RmotorC);                              // read right motor current draw
+  
+  Serial.print("Volts: ");
+  Serial.println(Volts);
 
   if (LeftAmps>Leftmaxamps)                                   // is motor current draw exceeding safe limit
   {
@@ -126,11 +129,11 @@ void loop()
   //----------------------------------------------------------- GOOD BATTERY speed controller opperates normally ----------------------
   else 
   {
- //   if (millis()-last_update>1000) {                        // if communication brakes, stops motor after 3 seconds
- //     Speed=0;
- //     Steer=0;
- //     Stop=true;
- //   }
+    if (millis()-last_update>1000) {                        // if communication brakes, stops motor after 3 seconds
+      Speed=0;
+      Steer=0;
+      Stop=true;
+    }
     
     CalculateSpeed();
 

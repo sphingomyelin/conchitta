@@ -133,7 +133,7 @@ void BluetoothController::getButtonState(int bStatus)  {
       buttonStatus &= B111101;        // OFF
       Serial.println("\n** Button_2: OFF **");
       _buttonStatus[1] = false;
-      Serial.println("Autonomous <ON>");
+      Serial.println("Autonomous Mode <OFF>");
       break;
 
       // -----------------  BUTTON #3  -----------------------

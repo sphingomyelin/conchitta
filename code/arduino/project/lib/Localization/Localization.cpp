@@ -386,6 +386,22 @@ void Localization::computeBeaconVectors(float x_R, float y_R, float theta_R, flo
   }
 }
 
+
+void Localization::computeMeasuredVectors(int peak[5][2], float vec_measured[5][2]) {
+  // Computes the vectors corresponding to the angle measurements from the linear cameras
+  for(int i=0; i<5; i++){
+    float angle = getAngleFromIndex(peak[i][1]);
+    if(angle == INF) {
+      vec_measured[i][0] = 0;
+      vec_measured[i][1] = 0;
+    } else {
+      vec_measured[i][0] = cos(angle);
+      vec_measured[i][1] = sin(angle);
+    }
+  }
+}
+
+
 int Localization::findBeacon(int pixel_index, float rejection_range, float vec_theory[4][2]) {
   // Finds the index of the beacon corresponding to angle index
   if(pixel_index < 0 || pixel_index > 612) {
@@ -427,6 +443,84 @@ int Localization::findBeacon(int pixel_index, float rejection_range, float vec_t
     return -1;
   }
 }
+
+void Localization::fullBeaconMatch(float vec_beacons[4][2], float vec_measured[5][2], int matchedBeacon[5]) {
+  // Finds the index of the beacons corresponding to all the measured angles at once by trying to maximize the scalar product between their vectors
+
+  // Check the number of actual peaks measured
+  int nbPeaksMeasured = 5;
+  for(int i=0; i<5; i++) {
+    if(vec_measured[i][0] == 0 && vec_measured[i][1] == 0)
+      nbPeaksMeasured --;
+  }
+
+  if(nbPeaksMeasured < 3) {
+    return; 
+  } else if(nbPeaksMeasured == 3) {
+    float matchPower = -INF;
+    int matchConfig = -1;
+    for(int j=0; j<4; j++) {
+      float temp_matchPower = -INF;
+      for(int k=0; k<3; k++) {
+        temp_matchPower += vec_measured[k][0]*vec_beacons[mod(k+j,4)][0] + vec_measured[k][1]*vec_beacons[mod(k+j,4)][1];
+      }
+      if(temp_matchPower > matchPower) {
+        matchPower = temp_matchPower;
+        matchConfig = j;
+      }
+    }
+    for(int k=0; k<3; k++) {
+      matchedBeacon[k] = mod(matchConfig+k,4);
+    }
+  } else if(nbPeaksMeasured == 4) {
+    float matchPower = -INF;
+    int matchConfig = -1;
+    int excludedMeas = -1;
+    for(int j=0; j<4; j++) {
+      float temp_matchPower = -INF;
+      for(int l=0; l<4; l++) {
+        for(int k=0; k<4; k++) {
+          if(k != l)
+            temp_matchPower += vec_measured[k][0]*vec_beacons[mod(k+j,4)][0] + vec_measured[k][1]*vec_beacons[mod(k+j,4)][1];
+        }
+        if(temp_matchPower > matchPower) {
+          matchPower = temp_matchPower;
+          matchConfig = j;
+          excludedMeas = l;
+        }
+      }
+    }
+    for(int k=0; k<4; k++) {
+      if(k != excludedMeas)
+        matchedBeacon[k] = mod(matchConfig+k,4);
+      else{
+        float temp = vec_beacons[mod(matchConfig+k,4)][0] * vec_measured[k][0] + vec_beacons[mod(matchConfig+k,4)][1] * vec_measured[k][1];
+        if(acos(temp) < rejection_range) {
+          matchedBeacon[k] = mod(matchConfig+k,4);
+        } else {
+          matchedBeacon[k] = -1;
+        }
+      }
+    }
+  } else
+    Serial.println("We fucked up!")
+    return;
+
+  return;
+
+
+}
+
+float Localization::scalarProduct_4elem(float vec_1[4][2], float vec_2[4][2]) {
+  // Computes the scalar product between 2 4x2 arrays
+  float scalarProduct;
+
+  for(int i=0; i<4; i++){
+    scalarProduct += vec_1[i][0]*vec_2[i][0] + vec_1[i][1]*vec_2[i][1];
+  }
+  return scalarProduct;
+}
+
 
 int Localization::matchingValidPoints(int matchedBeacon[5]) {
   int nb_matched = 0;

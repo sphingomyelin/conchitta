@@ -12,6 +12,15 @@ Brain::Brain() {
   //initDynamixel();
   _trapIsOpen = false;
   _state = START;
+
+  _speed = 0;
+  _steer = 0;
+
+  // Testing
+  _last_state_change_rpi = 0;
+  _state_rpi = 1;
+
+  setStateRPi(RPI_GET_BOTTLES);
 }
 
 void Brain::blink() const {
@@ -59,12 +68,32 @@ void Brain::test() {
 
   // ------- Testing Trap -------
   //Serial.println("Move! Go");
-  openTrap();
-  delay(500);
-  closeTrap();
-  delay(500);
+  // openTrap();
+  // delay(500);
+  // closeTrap();
+  // delay(500);
   //delay(1000);
   //delay (20); 
+
+  // ------- Testing Comm Rpi - Arduino --------
+  if(millis() - _last_state_change_rpi > 10000 && _state_rpi == 1) {
+    setStateRPi(RPI_GET_BOTTLES);
+    _state_rpi = 0;
+    _last_state_change_rpi = millis();
+  }
+  if(millis() - _last_state_change_rpi > 20000 && _state_rpi == 0) {
+    _last_state_change_rpi = millis();
+    _state_rpi = 1;
+    setStateRPi(RPI_GO_HOME);
+  }
+  
+  if(_state_rpi == 0) {
+    getPosNearestBottle();
+  } else {
+    getLed();
+  }
+  
+  //delay(1000);
 
 }
 
@@ -78,7 +107,7 @@ void Brain::run() {
     if (Bluetooth.buttonIsOn(3)) {
       stopMotors();
     } else {
-      setSpeed(Bluetooth.getSpeed(), Bluetooth.getSteer());
+      setSpeed((int)Bluetooth.getSpeed()*1.4, (int)Bluetooth.getSteer()*1.4);
     }
     if(Bluetooth.buttonIsOn(5)) {
       if(Bluetooth.buttonIsOn(6)) {
@@ -100,14 +129,17 @@ void Brain::run() {
 
 // State functions
 void Brain::stateStart() {
-  SEND("STATE: START");
-  Bluetooth.send("Start");
+  SEND("START");
+  setStateRPi(RPI_GET_BOTTLES);
+  // Bluetooth.send("Start");
   _startTime = millis();
   setState(GET_BOTTLES);
 }
 
 void Brain::stateGetBottlesTransition() {
-  SEND("STATE: GET_BOTTLES");
+  SEND("GET_BOTTLES");
+  turnBeltForward();
+  setStateRPi(RPI_GET_BOTTLES);
   _getbottles_last_forward_command = millis();
   _getbottles_time_turning = random(TIME_TURNING_MIN, TIME_TURNING_MAX);
   _getbottles_speed = 0;
@@ -117,8 +149,9 @@ void Brain::stateGetBottlesTransition() {
 }
 
 void Brain::stateGetBottles() {
-  SEND("STATE: GET_BOTTLES_STATE");
-  Bluetooth.send(_getbottles_time_turning+TIME_GOING_STRAIGHT);
+  SEND("GET_BOTTLES_STATE");
+  setStateRPi(RPI_GET_BOTTLES);
+  //Bluetooth.send((int)(_getbottles_time_turning+TIME_GOING_STRAIGHT));
   if(getBottleCount() > MAX_BOTTLES) {
     setState(GO_HOME);
   } else if(obstacleInTheWay()) {
@@ -130,24 +163,39 @@ void Brain::stateGetBottles() {
       approachNearestBottle();
     } else {
       // Random
-      if(millis() - _getbottles_last_forward_command < TIME_GOING_STRAIGHT) {
+      unsigned long time_since_last_forward = millis() - _getbottles_last_forward_command;
+      if(time_since_last_forward < TIME_GOING_STRAIGHT) {
         // Go straight, but avoid obstacles if possible
-        /*float speedf = 0.0;
-        float steerf = 0.0;
-
-        speedf=-pow(1.0116,analogRead(A0))+speed;
-        speed = (int)speedf;
         
-        if (analogRead(A0)>100) {
-          steerf=0.3*analogRead(A0)-30+steer;
-        }
-        steer = (int)steerf;
+        // David:
+        // _speed -= (int)pow(1.0116,analogRead(IR_OBST_FL));
+        // _speed -= (int)pow(1.0116,analogRead(IR_OBST_FR));
+        
+        // Jan:
+        /*_speed = (int) _speed*(IR_OBST_SMOOTHING_RATIO) + (1.0 - IR_OBST_SMOOTHING_RATIO) * \
+                 (MAX_SPEED - (int)pow(1.0116,analogRead(IR_OBST_FL)) \
+                            - (int)pow(1.0116,analogRead(IR_OBST_FR)));
+        
+        int ir_obst_sl_meas = analogRead(IR_OBST_SL);
+        int ir_obst_sr_meas = analogRead(IR_OBST_SR);
 
-        setSpeed(speed, steer);*/
+        if(ir_obst_sl_meas > IR_OBST_LOWER_THRESHOLD && ir_obst_sr_meas > IR_OBST_LOWER_THRESHOLD) {
+          _steer = _steer*(IR_OBST_SMOOTHING_RATIO) + (1.0 - IR_OBST_SMOOTHING_RATIO) * \
+                          ( +(0.3*ir_obst_sl_meas-30) -(0.3*ir_obst_sr_meas-30));
+        } else if(ir_obst_sl_meas > IR_OBST_LOWER_THRESHOLD) {
+          _steer = _steer*(IR_OBST_SMOOTHING_RATIO) + (1.0 - IR_OBST_SMOOTHING_RATIO) * \
+                          ( +(0.3*ir_obst_sl_meas-30));
+        } else if(ir_obst_sr_meas > IR_OBST_LOWER_THRESHOLD) {
+          _steer = _steer*(IR_OBST_SMOOTHING_RATIO) + (1.0 - IR_OBST_SMOOTHING_RATIO) * \
+                          ( -(0.3*ir_obst_sr_meas-30));
+        } else {
+          _steer = _steer*(IR_OBST_SMOOTHING_RATIO);  
+        }*/
+        // setSpeed(_speed, _steer);
         setSpeed(MAX_SPEED, 0);
-      } else if(millis() - _getbottles_last_forward_command < (TIME_GOING_STRAIGHT + _getbottles_time_turning)) {
-        int direction = (int)(random(0, 1))*2-1;
-        setSpeed(0, direction*MAX_SPEED);
+      } else if(time_since_last_forward < (TIME_GOING_STRAIGHT + _getbottles_time_turning)) {
+        int direction = (int)(random(0, 2))*2-1;
+        setSpeed(0, direction*MAX_STEER);
       } else {
         _getbottles_last_forward_command = millis();
         _getbottles_time_turning = random(TIME_TURNING_MIN, TIME_TURNING_MAX);
@@ -157,16 +205,30 @@ void Brain::stateGetBottles() {
 }
 
 void Brain::stateGoHome() {
-  SEND("STATE: GO_HOME");
-  // TODO
+  SEND("GO_HOME");
+  stopBelt();
+  setStateRPi(RPI_GO_HOME);
+  if(isHome()) {
+    setState(RELEASE_BOTTLES);
+  }
+  if(getLed()) {
+    if(_colorLed == 'j') {
+      setSpeed(SLOW_SPEED, ((_xBottle - 160.0) / 160.0) * SLOW_STEER);
+    } else {
+      setSpeed(0, SLOW_STEER);
+    }
+  } else {
+    setSpeed(0, SLOW_STEER);
+  }
+
 }
 
 void Brain::stateReleaseBottles() {
-  SEND("STATE: RELEASE_BOTTLES");
+  SEND("RELEASE_BOTTLES");
   // TODO: TURN 180 DEGREES properly
   int started_turning = millis();
   while(started_turning - millis() < TIME_TURNING_RELEASE_BOTTLES) {
-    setSpeed(0, MAX_SPEED/2);
+    setSpeed(0, MAX_STEER);
   }
   setSpeed(0, 0);
   openTrap();
@@ -182,19 +244,35 @@ void Brain::stateReleaseBottles() {
 }
 
 void Brain::stateAvoidObstacle() {
-  SEND("STATE: AVOID_OBSTACLE");
+  SEND("AVOID_OBSTACLE");
   // TODO
+  setSpeed(0, SLOW_STEER);
+  delay(TIME_TURNING_RELEASE_BOTTLES);
+  setSpeed(SLOW_SPEED, 0);
+  setState(GET_BOTTLES);
 }
 
 void Brain::stateAvoidObstacleHome() {
-  SEND("STATE: AVOID_OBSTACLE_HOME");
+  SEND("AVOID_OBSTACLE_HOME");
   // TODO
+  setSpeed(0, SLOW_STEER);
+  delay(TIME_TURNING_RELEASE_BOTTLES/2);
+  setSpeed(SLOW_SPEED, 0);
+  delay(TIME_TURNING_RELEASE_BOTTLES);
+  setSpeed(0, -SLOW_STEER);
+  delay(TIME_TURNING_RELEASE_BOTTLES/2);
+  setState(GO_HOME);
 }
 
 
 // functions used by state functions
 void Brain::approachNearestBottle() {
   // TODO: PID on the x and y of the nearest bottle
+
+  _speed = (int)_speed*(IR_OBST_SMOOTHING_RATIO) + (int)((1.0 - IR_OBST_SMOOTHING_RATIO) * (((240.0 - _yBottle) / 240.0) * 0.8 + 0.2) * MAX_SPEED); 
+  _steer = (int)_steer*(IR_OBST_SMOOTHING_RATIO) + (int)((1.0 - IR_OBST_SMOOTHING_RATIO) * ((_xBottle - 160.0) / 160.0) * MAX_STEER);
+
+  setSpeed(_speed, _steer);
 }
 
 int Brain::getBottleCount() {
@@ -218,63 +296,134 @@ bool Brain::obstacleInTheWay() {
   // }
 }
 
-
-// Communication with RPi
-bool Brain::getPosNearestBottle() {
-  if (Serial.available() > 0) {
-    delay(5);
-    char xRPIstr[4], yRPIstr[4];
-    char xRPIchar=-1, yRPIchar=-1;
-    char charRPI = Serial.read();
-    byte index = 0;
-    if (charRPI=='x') {
-      while ((xRPIchar=Serial.read()) > 47) {
-        xRPIchar = xRPIchar - '0';
-        xRPIstr[index] = xRPIchar;
-        index++;
-      }
-      if (index==1)
-        _xBottle = xRPIstr[0];
-      else if (index==2)
-        _xBottle = xRPIstr[0]*10+xRPIstr[1];
-      else if (index==3)
-        _xBottle = xRPIstr[0]*100+xRPIstr[1]*10+xRPIstr[2];
-      //index=0;
-      //Serial.print("x =");
-      //Serial.println(xRPI);
-    } else if (charRPI=='y') {
-      while ((yRPIchar=Serial.read()) > 47) {
-        yRPIchar = yRPIchar -'0';
-        yRPIstr[index] = yRPIchar;
-        index++;
-      }
-      if (index==1)
-        _yBottle = yRPIstr[0];
-      else if (index==2)
-        _yBottle = yRPIstr[0]*10+yRPIstr[1];
-      else if (index==3)
-        _yBottle = yRPIstr[0]*100+yRPIstr[1]*10+yRPIstr[2];
-      //index=0;
-      //Serial.print("y =");
-      //Serial.println(yRPI);
-    } else{
-      //Serial.println("wrong character");
-    }
-    //charRPI=-1;
-    Serial.flush();
-
-    Bluetooth.send((int)_xBottle);
-    Bluetooth.send((float)_yBottle);
-    Bluetooth.send("received pos");
+bool Brain::isHome() {
+  if(getTimeMillis() > TIME_END - 20000) {
     return true;
   } else {
     return false;
   }
 }
 
+// Communication with RPi
+bool Brain::getPosNearestBottle() {
+  bool found_x = false, found_y = false;
+  delay(5);
+  // while(Serial.available() > 0) {
+  while((!found_x || !found_y) && Serial.available() > 0) {
+    char charRPI = Serial.read();
+    if (charRPI=='x') {
+      found_x = true;
+      // _xBottle = parseNextInt();
+      _xBottle = Serial.parseInt();
+    } else if(charRPI=='y') {
+      found_y = true;
+      // _yBottle = parseNextInt();
+      _yBottle = Serial.parseInt();
+    } 
+    // else {
+      // SEND((String)charRPI);
+      // SEND("WRONG LED");
+      // return false;
+    // }
+    // Serial.flush();
+  }
+  // Discard everything in buffer
+  while(Serial.read() != -1);
+
+  if(found_x && found_y) {
+    Bluetooth.send((int)_xBottle);
+    Bluetooth.send((float)_yBottle);
+    // Bluetooth.send("REC X/Y");
+    return true;
+  } else if(found_x) {
+    Bluetooth.send((int)_xBottle);
+    Bluetooth.send((float) 0.0);
+    // Bluetooth.send("REC X");  
+  } else if(found_y) {
+    Bluetooth.send((int) 0);
+    Bluetooth.send((float)_yBottle);
+    // Bluetooth.send("REC Y");
+  } else {
+    // Bluetooth.send("NOT REC BOT");
+    return false;
+  }
+}
+
+bool Brain::getLed() {
+  // int waiting = Serial.available();
+  // Bluetooth.send(waiting);
+  // if(waiting > 0) {
+  //   Bluetooth.send(Serial.readString());
+  // }
+  
+  delay(5);
+  bool found_led = false;
+  while(!found_led && Serial.available() > 0) {
+    char charRPI = Serial.read();
+    if (charRPI=='g' || charRPI=='r' || charRPI=='b' || charRPI=='j') {
+      found_led = true;
+      _xLed = Serial.parseInt();
+      _colorLed = charRPI;
+      // _xLed = parseNextInt();
+      // _xLed = Serial.parseInt();
+    }
+    // else {
+      // SEND((String)charRPI);
+      // SEND("WRONG LED");
+      // return false;
+    // }
+    // Serial.flush();
+  }
+  // Discard everything in buffer
+  while(Serial.read() != -1);
+
+  if(found_led) {
+    Bluetooth.send(_xLed);
+    Bluetooth.send((float)(_colorLed));
+    // Bluetooth.send("REC LED");
+    return true;
+  } else {
+    // Bluetooth.send("NOT REC LED");
+    return false;
+  }
+}
+
+/*int Brain::parseNextInt() {
+  int parsedInt;
+  char input_str[4];
+  char input_char = -1;
+  byte index = 0;
+  while ((input_char = Serial.read()) > 47) {
+    input_char = input_char - '0';
+    input_str[index] = input_char;
+    index++;
+  }
+  if (index==1)
+    parsedInt = input_str[0];
+  else if (index==2)
+    parsedInt = input_str[0]*10+input_str[1];
+  else if (index==3)
+    parsedInt = input_str[0]*100+input_str[1]*10+input_str[2];
+  return parsedInt;
+}*/
+
+void Brain::setStateRPi(STATE_RPI stateRpi) {
+  switch(stateRpi) {
+    case RPI_GET_BOTTLES:
+      Serial.print("a");
+      break;
+    case RPI_GO_HOME:
+      Serial.print("b");
+      break;
+    case RPI_SHUTDOWN:
+      Serial.print("c");
+      break;
+    }
+}
+
 // Communication with WildThumper
 void Brain::setSpeed(int speed, int steer) const {
-  Serial.print("Sending speed to WildThumper: ");
+  // Serial.print("Sending speed to WildThumper: ");
   Serial.println(speed);
   Wire.beginTransmission(4);
   Wire.write("v");                // set speed
@@ -283,7 +432,7 @@ void Brain::setSpeed(int speed, int steer) const {
   Wire.endTransmission();
 
 
-  Serial.print("Sending steer to WildThumper: ");
+  // Serial.print("Sending steer to WildThumper: ");
   Serial.println(steer);
   Wire.beginTransmission(4);
   Wire.write("w");                // set steer (tangential)
@@ -293,7 +442,7 @@ void Brain::setSpeed(int speed, int steer) const {
 }
 
 void Brain::stopMotors() const {
-  Serial.println("Stopping Motors.");
+  // Serial.println("Stopping Motors.");
   Wire.beginTransmission(4);
   Wire.write("s");
   Wire.endTransmission();

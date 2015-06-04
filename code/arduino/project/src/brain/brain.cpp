@@ -12,10 +12,9 @@ unsigned long bottleStartTime;
 void setup() {
 
   // Serial USB connection to computer
-  Serial.begin(115200);
-  delay(2000);
-  Serial.println("Start!");
-  Serial.println("");
+  Serial.begin(9600);
+  delay(10000);
+  SEND("Start!");
 
   // Serial2 Bluetooth connection to smartphone
   // 115200 = baud rate Bluetooth module
@@ -97,8 +96,10 @@ void loop() {
   //   Serial.print(c);         // print the character
   // }
 
-  brain.run();
+  brain.run(); // ---------------- REMOVED FOR TESTING OF COMMUNICATION RPI - ARDUINO -------------------------
   // delay(200);
+  // Bluetooth.process();
+  // brain.test();
 
   // Bluetooth.send(5);
   // Bluetooth.send(4.89f);

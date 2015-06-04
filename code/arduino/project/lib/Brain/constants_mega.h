@@ -12,18 +12,31 @@ enum STATE
   AVOID_OBSTACLE_HOME,
 };
 
-#define SEND(x) Serial.println(x);
+enum STATE_RPI
+{
+  RPI_GET_BOTTLES,
+  RPI_GO_HOME,
+  RPI_SHUTDOWN,
+};
+
+// #define SEND(x) Serial.println(x);
+#define SEND(x) Bluetooth.send(x);
 
 #define LED 13
 
-#define MAX_SPEED 120
+#define MAX_SPEED 30
+#define MAX_STEER 30
+#define SLOW_SPEED 20
+#define SLOW_STEER 20
+
 #define MAX_BOTTLES 6
-#define TIME_GOING_STRAIGHT 10000
-#define TIME_TURNING_MAX 3000
+#define TIME_GOING_STRAIGHT 8000
+#define TIME_TURNING_MAX 8000
 #define TIME_TURNING_MIN 500
 #define RUNTIME 3000
 
 #define TIME_END_GO_HOME 8 * 60000
+#define TIME_END 10* 60000
 #define TIME_TURNING_RELEASE_BOTTLES 1500
 
 #define DYMX_ID_R 4
@@ -48,6 +61,9 @@ enum STATE
 #define IR_OBST_FR_TH 0
 #define IR_OBST_SL_TH 0
 #define IR_OBST_SR_TH 0
+
+#define IR_OBST_SMOOTHING_RATIO 0.1
+#define IR_OBST_LOWER_THRESHOLD 100
 
 #endif
 

@@ -200,23 +200,23 @@ void CalculateSpeed()
   float elim_R, elim_L;
 
   //calculate and limits speed value for each side
-  if (abs(Speed+Steer)<130) {
+  if (abs(Speed)+abs(Steer)<140) {
     speed_L=Speed+Steer;
     speed_R=Speed-Steer;
         /*
-        Serial.print("Speed");             // print the character
+        Serial.print("Speed");           // print the character
         Serial.print(" ");
-        Serial.println(Speed);         // print the speed
-        Serial.print("Steer");             // print the character
+        Serial.println(Speed);           // print the speed
+        Serial.print("Steer");           // print the character
         Serial.print(" ");
-        Serial.println(Steer);         // print the angle
+        Serial.println(Steer);           // print the angle
         */
   }
   else {
-    speed_L=(int)(Speed+Steer)/(1+(Speed+Steer)/130.0);
-    speed_R=(int)(Speed-Steer)/(1+(Speed+Steer)/130.0);
+    speed_L=(int)((Speed+Steer)/((abs(Speed)+abs(Steer))/140.0));
+    speed_R=(int)((Speed-Steer)/((abs(Speed)+abs(Steer))/140.0));
   }
-        /*Serial.print("speed_R");             // print the character
+        /*Serial.print("speed_R");       // print the character
         Serial.print(" ");
         Serial.println(speed_R);         // print the angle
         */

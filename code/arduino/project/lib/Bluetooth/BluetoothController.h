@@ -44,7 +44,7 @@ class BluetoothController {
     byte cmd[8] = {0, 0, 0, 0, 0, 0, 0, 0};             // bytes received
     byte buttonStatus = 0;                              // first Byte sent to Android device
     long previousMillis = 0;                            // will store last time Buttons status was updated
-    long sendInterval = SLOW;                           // interval between Buttons status transmission (milliseconds)
+    long sendInterval = FAST;                           // interval between Buttons status transmission (milliseconds)
     int _joySteer;
     int _joySpeed;
     bool _buttonStatus[6] = {false, false, false, false, false, false};

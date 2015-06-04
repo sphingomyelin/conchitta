@@ -37,7 +37,10 @@ class Brain {
     long _startTime;
     bool _trapIsOpen;
 
-    int _xBottle, _yBottle; 
+    int _xBottle, _yBottle;
+    char _colorLed;
+    int _xLed;
+    int _speed, _steer;
 
     // State functions
     void execute_fsm();
@@ -55,9 +58,13 @@ class Brain {
     int getBottleCount();
     long getTimeMillis();
     bool obstacleInTheWay();
+    bool isHome();
 
     // Communication with RPi
     bool getPosNearestBottle();
+    bool getLed();
+    void setStateRPi(STATE_RPI stateRpi);
+    // int parseNextInt();
 
     // Communication with WildThumper
     void setSpeed(int speed, int steer) const;
@@ -73,10 +80,14 @@ class Brain {
 
 
     //	VARIABLES OF STATES
-    int _getbottles_last_forward_command;
-    int _getbottles_time_turning;
+    unsigned long _getbottles_last_forward_command;
+    unsigned long _getbottles_time_turning;
     int _getbottles_speed;
     int _getbottles_steer;
+
+    // Test variable for now
+    unsigned long _last_state_change_rpi;
+    int _state_rpi;
 
     //	CONSTANTS
 

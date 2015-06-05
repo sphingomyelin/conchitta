@@ -86,8 +86,8 @@ class Brain {
     int _getbottles_steer;
 
     // Test variable for now
-    unsigned long _last_state_change_rpi;
-    int _state_rpi;
+    // unsigned long _last_state_change_rpi;
+    // int _state_rpi;
 
     //	CONSTANTS
 

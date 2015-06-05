@@ -16,9 +16,9 @@ Brain::Brain() {
   _speed = 0;
   _steer = 0;
 
-  // Testing
-  _last_state_change_rpi = 0;
-  _state_rpi = 1;
+  // // Testing
+  // _last_state_change_rpi = 0;
+  // _state_rpi = 1;
 
   setStateRPi(RPI_GET_BOTTLES);
 }
@@ -76,22 +76,22 @@ void Brain::test() {
   //delay (20); 
 
   // ------- Testing Comm Rpi - Arduino --------
-  if(millis() - _last_state_change_rpi > 10000 && _state_rpi == 1) {
-    setStateRPi(RPI_GET_BOTTLES);
-    _state_rpi = 0;
-    _last_state_change_rpi = millis();
-  }
-  if(millis() - _last_state_change_rpi > 20000 && _state_rpi == 0) {
-    _last_state_change_rpi = millis();
-    _state_rpi = 1;
-    setStateRPi(RPI_GO_HOME);
-  }
+  // if(millis() - _last_state_change_rpi > 10000 && _state_rpi == 1) {
+  //   setStateRPi(RPI_GET_BOTTLES);
+  //   _state_rpi = 0;
+  //   _last_state_change_rpi = millis();
+  // }
+  // if(millis() - _last_state_change_rpi > 20000 && _state_rpi == 0) {
+  //   _last_state_change_rpi = millis();
+  //   _state_rpi = 1;
+  //   setStateRPi(RPI_GO_HOME);
+  // }
   
-  if(_state_rpi == 0) {
-    getPosNearestBottle();
-  } else {
-    getLed();
-  }
+  // if(_state_rpi == 0) {
+  //   getPosNearestBottle();
+  // } else {
+  //   getLed();
+  // }
   
   //delay(1000);
 
@@ -149,7 +149,7 @@ void Brain::stateGetBottlesTransition() {
 }
 
 void Brain::stateGetBottles() {
-  SEND("GET_BOTTLES_STATE");
+  // SEND("GET_BOTTLES_STATE");
   setStateRPi(RPI_GET_BOTTLES);
   //Bluetooth.send((int)(_getbottles_time_turning+TIME_GOING_STRAIGHT));
   if(getBottleCount() > MAX_BOTTLES) {
@@ -160,9 +160,11 @@ void Brain::stateGetBottles() {
     setState(GO_HOME);
   } else {
     if(getPosNearestBottle()) {
+      SEND("BOTTLE! O.O");
       approachNearestBottle();
     } else {
       // Random
+      SEND("RANDOM");
       unsigned long time_since_last_forward = millis() - _getbottles_last_forward_command;
       if(time_since_last_forward < TIME_GOING_STRAIGHT) {
         // Go straight, but avoid obstacles if possible
@@ -269,8 +271,8 @@ void Brain::stateAvoidObstacleHome() {
 void Brain::approachNearestBottle() {
   // TODO: PID on the x and y of the nearest bottle
 
-  _speed = (int)_speed*(IR_OBST_SMOOTHING_RATIO) + (int)((1.0 - IR_OBST_SMOOTHING_RATIO) * (((240.0 - _yBottle) / 240.0) * 0.8 + 0.2) * MAX_SPEED); 
-  _steer = (int)_steer*(IR_OBST_SMOOTHING_RATIO) + (int)((1.0 - IR_OBST_SMOOTHING_RATIO) * ((_xBottle - 160.0) / 160.0) * MAX_STEER);
+  _speed = (int)_speed*(IR_OBST_SMOOTHING_RATIO) + (int)((1.0 - IR_OBST_SMOOTHING_RATIO) * ((((240.0 - _yBottle) / 240.0) * 0.5 + 0.5) * MAX_SPEED)); 
+  _steer = (int)_steer*(IR_OBST_SMOOTHING_RATIO) + (int)((1.0 - IR_OBST_SMOOTHING_RATIO) * (((_xBottle - 160.0) / 160.0) * MAX_STEER));
 
   setSpeed(_speed, _steer);
 }
@@ -286,12 +288,12 @@ long Brain::getTimeMillis() {
 
 bool Brain::obstacleInTheWay() {
   // TODO
-  // if((analogRead(IR_OBST_FL) > IR_OBST_FL_TH) || \
-  //    (analogRead(IR_OBST_FR) > IR_OBST_FR_TH) || \
-  //    (analogRead(IR_OBST_SL) > IR_OBST_SL_TH) || \
-  //    (analogRead(IR_OBST_SR) > IR_OBST_SR_TH)) {
-  //   return true;
-  // } else {
+  /*if((analogRead(IR_OBST_FL) > IR_OBST_FL_TH) || \
+     (analogRead(IR_OBST_FR) > IR_OBST_FR_TH) || \
+     (analogRead(IR_OBST_SL) > IR_OBST_SL_TH) || \
+     (analogRead(IR_OBST_SR) > IR_OBST_SR_TH)) {
+    return true;
+  } else {*/
     return false;    
   // }
 }

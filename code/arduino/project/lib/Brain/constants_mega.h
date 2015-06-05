@@ -32,7 +32,7 @@ enum STATE_RPI
 #define MAX_BOTTLES 6
 #define TIME_GOING_STRAIGHT 8000
 #define TIME_TURNING_MAX 8000
-#define TIME_TURNING_MIN 500
+#define TIME_TURNING_MIN 4000
 #define RUNTIME 3000
 
 #define TIME_END_GO_HOME 8 * 60000
@@ -44,18 +44,18 @@ enum STATE_RPI
 #define DYMX_ID_TRAP 1
 
 // TODO: define IR
-#define IR_FRONT 0
-#define IR_TOP 0
-#define IR_CONTAINER 0
+#define IR_FRONT A0
+#define IR_TOP A1
+// #define IR_CONTAINER 0
 
 #define IR_FRONT_TH 280
 #define IR_TOP_TH 280
 #define IR_CONTAINER_TH 280
 
-#define IR_OBST_FL 0
-#define IR_OBST_FR 0
-#define IR_OBST_SL 0
-#define IR_OBST_SR 0
+#define IR_OBST_FL A2
+#define IR_OBST_FR A3
+#define IR_OBST_SL A4
+#define IR_OBST_SR A5
 
 #define IR_OBST_FL_TH 0
 #define IR_OBST_FR_TH 0

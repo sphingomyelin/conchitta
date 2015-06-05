@@ -62,16 +62,23 @@ bool Localization::calculatePose() {
   }
   Serial.println("]");
 
-  // Find the 4 beacon matches for the 5 measured peaks
-  for(int i = 0; i < 5; i++) {
-    matchedBeacon[i] = findBeacon(peak[i][1], REJECTION_ANGLE, beaconVector);
+  // Find the 4 beacon matches for the 4 measured peaks
+  // for(int i = 0; i < 4; i++) {
+  //   matchedBeacon[i] = findBeacon(peak[i][1], REJECTION_ANGLE, beaconVector);
+  // }
+  for(int i = 0; i < 4; i++) {
+    float angle = getAngleFromIndex(peak[i][1]);
+    _vec_meas[i][0] = cos(angle);
+    _vec_meas[i][1] = sin(angle);
   }
+
+  fullBeaconMatch(beaconVector, _vec_meas, matchedBeacon);
   // Count the number of matches
   int match = matchingValidPoints(matchedBeacon);
   Serial.print("Number of matched beacons: ");
   Serial.println(match);
   Serial.print("Matched beacons: [ ");
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < 4; ++i) {
     Serial.print(matchedBeacon[i]);
     Serial.print(", ");
   }
@@ -87,7 +94,7 @@ bool Localization::calculatePose() {
     int correctMatchedBeacon[4]; 
 
     // Scan through the angles and only retain the ones that matched
-  	for(int i = 0; i < 5; i++) {
+  	for(int i = 0; i < 4; i++) {
   		if(matchedBeacon[i] != -1){
   			angles[count] = getPeakAngle(i);
   			correctMatchedBeacon[count] = matchedBeacon[i]; // Only save the indexes of the matched beacons (i.e discard the -1 values)
@@ -101,7 +108,7 @@ bool Localization::calculatePose() {
     int correctMatchedBeacon[3];
 
     // Scan through the angles and only retain the ones that matched
-    for(int i = 0; i < 5; i++) {
+    for(int i = 0; i < 4; i++) {
       if(matchedBeacon[i] != -1){
         angles[count] = getPeakAngle(i);
         correctMatchedBeacon[count] = matchedBeacon[i]; // Only save the indexes of the matched beacons (i.e discard the -1 values)
@@ -133,7 +140,7 @@ void Localization::preprocessPixels()
   int i = 0, j = 0;
   // int p_INF_CAM = angle2px[INF_CAM];
   // int p_sup = angle2px[sup];
-  for(i = 0; i < 5; i++) {
+  for(i = 0; i < 4; i++) {
     peak[i][0] = -1;
     peak[i][1] = INF;
   }
@@ -165,18 +172,8 @@ void Localization::preprocessPixels()
     {
       next_mean -= data[i+33-j];
     }
-    next_mean /= 5;
-    if(next_mean > 0) {
-      for (j = 0; j < 34; ++j)
-      {
-        adding = (j * next_mean) / 34;
-        if(255-data[i+j] > adding) {
-          data[i+j] += adding;
-        } else {
-          data[i+j] = 255;
-        }
-      }
-    } else {
+    next_mean /= WIDTH_LIN_INTERP;
+    if(next_mean < 0) {
       for (j = 0; j < 34; ++j)
       {
         adding = (j * next_mean) / 34;
@@ -184,6 +181,16 @@ void Localization::preprocessPixels()
           data[i+j] += adding;
         } else {
           data[i+j] = 0;
+        }
+      }
+    } else {
+      for (j = 0; j < 34; ++j)
+      {
+        adding = (j * next_mean) / 34;
+        if(275-data[i+j] > adding) {
+          data[i+j] += adding;
+        } else {
+          data[i+j] = 275;
         }
       }
     }
@@ -200,8 +207,18 @@ void Localization::preprocessPixels()
     next_mean -= data[NCAMS*NPIXELS-j-1];
   }
   Serial.println(next_mean);
-  next_mean /= 5;
-  if(next_mean > 0) {
+  next_mean /= WIDTH_LIN_INTERP;
+  if(next_mean < 0) {
+    for (j = 0; j < 34; ++j)
+    {
+      adding = (j * next_mean) / 34;
+      if(data[NCAMS*NPIXELS-34+j] > -adding) {
+        data[NCAMS*NPIXELS-34+j] += adding;
+      } else {
+        data[NCAMS*NPIXELS-34+j] = 0;
+      }
+    }
+  } else {
     for (j = 0; j < 34; ++j)
     {
       adding = (j * next_mean) / 34;
@@ -211,20 +228,10 @@ void Localization::preprocessPixels()
       // Serial.print(data[NCAMS*NPIXELS-34+j]);
       // Serial.print(" / ");
       // Serial.println(NCAMS*NPIXELS-34+j);
-      if(255-data[NCAMS*NPIXELS-34+j] > adding) {
+      if(275-data[NCAMS*NPIXELS-34+j] > adding) {
         data[NCAMS*NPIXELS-34+j] += adding;
       } else {
-        data[NCAMS*NPIXELS-34+j] = 255;
-      }
-    }
-  } else {
-    for (j = 0; j < 34; ++j)
-    {
-      adding = (j * next_mean) / 34;
-      if(data[NCAMS*NPIXELS-34+j] > -adding) {
-        data[NCAMS*NPIXELS-34+j] += adding;
-      } else {
-        data[NCAMS*NPIXELS-34+j] = 0;
+        data[NCAMS*NPIXELS-34+j] = 275;
       }
     }
   }
@@ -239,11 +246,14 @@ void Localization::preprocessPixels()
   Serial.println("");
 
 
-
   // Highpass filter (remove underlying trend)
   int current = 0;
   int highest_pixel = 0;
-  for(i = 0; i < NCAMS*NPIXELS; i++)
+  int result_buffer[WINDOW_HALF_WIDTH_HIGHPASS];
+  int start_buffer[WINDOW_HALF_WIDTH_HIGHPASS];
+  byte buffer_index = 0;
+  // Filling the buffer with the first WINDOW_HALF_WIDTH_HIGHPASS results, but not yet writing them out
+  for(i = 0; i < WINDOW_HALF_WIDTH_HIGHPASS; i++)
   {
     current = 0;
     for (j = 0; j < 2*WINDOW_HALF_WIDTH_HIGHPASS+1; ++j)
@@ -251,13 +261,45 @@ void Localization::preprocessPixels()
       current += mask_highpass[j]*data[mod((j-WINDOW_HALF_WIDTH_HIGHPASS) + i, (NCAMS*NPIXELS))];
     }
     if(current > highest_pixel) highest_pixel = current;
-    filtered_data[i] = current;
+    start_buffer[i] = current;
   }
+  // Filling the buffer with the second WINDOW_HALF_WIDTH_HIGHPASS results
+  for(i = WINDOW_HALF_WIDTH_HIGHPASS; i < 2*WINDOW_HALF_WIDTH_HIGHPASS; i++)
+  {
+    current = 0;
+    for (j = 0; j < 2*WINDOW_HALF_WIDTH_HIGHPASS+1; ++j)
+    {
+      current += mask_highpass[j]*data[mod((j-WINDOW_HALF_WIDTH_HIGHPASS) + i, (NCAMS*NPIXELS))];
+    }
+    if(current > highest_pixel) highest_pixel = current;
+    result_buffer[i] = current;
+  }
+
+  // Doing the rest, while using the buffer so as not to overwrite still used data
+  for(i = 2*WINDOW_HALF_WIDTH_HIGHPASS; i < NCAMS*NPIXELS; i++)
+  {
+    current = 0;
+    for (j = 0; j < 2*WINDOW_HALF_WIDTH_HIGHPASS+1; ++j)
+    {
+      current += mask_highpass[j]*data[mod((j-WINDOW_HALF_WIDTH_HIGHPASS) + i, (NCAMS*NPIXELS))];
+    }
+    if(current > highest_pixel) highest_pixel = current;
+    data[i-WINDOW_HALF_WIDTH_HIGHPASS] = result_buffer[buffer_index];
+    result_buffer[buffer_index] = current;
+    buffer_index = (buffer_index+1) % WINDOW_HALF_WIDTH_HIGHPASS;
+  }
+  // Empty the two buffers
+  for(i = 0; i < WINDOW_HALF_WIDTH_HIGHPASS; i++) {
+    data[NCAMS*NPIXELS-WINDOW_HALF_WIDTH_HIGHPASS+i] = result_buffer[(buffer_index+i) % WINDOW_HALF_WIDTH_HIGHPASS];
+    data[i] = start_buffer[i];
+  }
+
+  // Rescaling the peaks to 250
   float ratio = highest_pixel/250.0;
   for (i = 0; i < NCAMS*NPIXELS; ++i)
   {
-    if(filtered_data[i] < 0) data[i] = 0;
-    else data[i] = filtered_data[i]/ratio;
+    if(data[i] < 0) data[i] = 0;
+    else data[i] = data[i]/ratio;
   }
   Serial.println("Highpass: ");
   for(i=0;i<NCAMS*NPIXELS;i++)
@@ -267,23 +309,54 @@ void Localization::preprocessPixels()
   }
   Serial.println("");
   Serial.println("");
-
+  
 
   // Convolution with peak shape
-  for(i = 0; i < NCAMS*NPIXELS; i++)
+  // Same procedure as every year, James.
+  buffer_index = 0;
+  // Filling the buffer with the first WINDOW_HALF_WIDTH_CONV results, but not yet writing them out
+  for(i = 0; i < WINDOW_HALF_WIDTH_CONV; i++)
   {
     current = 0;
     for (j = 0; j < 2*WINDOW_HALF_WIDTH_CONV+1; ++j)
     {
       current += mask_conv[j]*data[mod((j-WINDOW_HALF_WIDTH_CONV) + i, (NCAMS*NPIXELS))];
     }
-    filtered_data[i] = current;
+    start_buffer[i] = current;
   }
+  // Filling the buffer with the second WINDOW_HALF_WIDTH_CONV results
+  for(i = WINDOW_HALF_WIDTH_CONV; i < 2*WINDOW_HALF_WIDTH_CONV; i++)
+  {
+    current = 0;
+    for (j = 0; j < 2*WINDOW_HALF_WIDTH_CONV+1; ++j)
+    {
+      current += mask_conv[j]*data[mod((j-WINDOW_HALF_WIDTH_CONV) + i, (NCAMS*NPIXELS))];
+    }
+    result_buffer[i] = current;
+  }
+  // Doing the rest, while using the buffer so as not to overwrite still used data
+  for(i = 2*WINDOW_HALF_WIDTH_CONV; i < NCAMS*NPIXELS; i++)
+  {
+    current = 0;
+    for (j = 0; j < 2*WINDOW_HALF_WIDTH_CONV+1; ++j)
+    {
+      current += mask_conv[j]*data[mod((j-WINDOW_HALF_WIDTH_CONV) + i, (NCAMS*NPIXELS))];
+    }
+    data[i-WINDOW_HALF_WIDTH_CONV] = result_buffer[buffer_index];
+    result_buffer[buffer_index] = current;
+    buffer_index = (buffer_index+1) % WINDOW_HALF_WIDTH_CONV;
+  }
+  // Empty the two buffers
+  for(i = 0; i < WINDOW_HALF_WIDTH_CONV; i++) {
+    data[NCAMS*NPIXELS-WINDOW_HALF_WIDTH_CONV+i] = result_buffer[(buffer_index+i) % WINDOW_HALF_WIDTH_CONV];
+    data[i] = start_buffer[i];
+  }
+
 
   Serial.println("Filtered pixels: ");
   for(i=0;i<NCAMS*NPIXELS;i++)
   {
-    Serial.print(filtered_data[i]);
+    Serial.print(data[i]);
     Serial.print(" ");
   }
   Serial.println("");
@@ -295,7 +368,7 @@ int Localization::calculatePeaks()
   preprocessPixels();
 
   // extract peaks 
-  // and save only the highest 5 peaks
+  // and save only the highest 4 peaks
   int min = INF_CAM;
   float max = -INF_CAM;
   int max_count = 0;
@@ -304,7 +377,7 @@ int Localization::calculatePeaks()
   int current;
   bool lookformax = true;
   for(int i = 0; i < NCAMS*NPIXELS; i++) {
-    current = filtered_data[i]; // inserted raw data here instead of filtered data.
+    current = data[i]; // inserted raw data here instead of filtered data.
     if(current > max) {
       max = current;
       maxpos = i;
@@ -321,7 +394,7 @@ int Localization::calculatePeaks()
         // There's a maximum at position maxpos
         int minpos_peak = 0;
         int min_peak = INF_CAM;
-        for(int j = 0; j < 5; j++) {
+        for(int j = 0; j < 4; j++) {
           if(peak[j][0] < min_peak) {
             min_peak = peak[j][0];
             minpos_peak = j;
@@ -354,13 +427,13 @@ int Localization::calculatePeaks()
   }
 
   // Sort array with Selection Sort
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 4; i++) {
     // nSmallestIndex is the index of the smallest element
     // we've encountered so far.
     int nSmallestIndex = i;
 
     // Search through every element starting at nStartIndex+1
-    for (int j = i + 1; j < 5; j++)
+    for (int j = i + 1; j < 4; j++)
     {
       // If the current element is smaller than our previously found smallest
       if (getAngleFromIndex(peak[j][1]) < getAngleFromIndex(peak[nSmallestIndex][1]))
@@ -374,7 +447,7 @@ int Localization::calculatePeaks()
   }
 
   // Put the INF position of the pixels to -1
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 4; i++) {
     if(peak[i][1] == INF) {
       peak[i][1] = -1;
     }
@@ -387,7 +460,7 @@ int Localization::calculatePeaks()
 
 float Localization::triangulation(float angle1, float angle2, float angle3, float x1, float y1, float x2, float y2, float x3, float y3, float &x_R, float &y_R, float &vec_R_x, float &vec_R_y){
   // This function triangulates from 3 angles associated with 3 beacons. Returns a position and an orientation.
-  /*
+  
   //Compute modified beacon coordinates (x'_i, y'_i)
   float x1p = x1 - x2;
   float y1p = y1 - y2;
@@ -468,8 +541,7 @@ float Localization::triangulation(float angle1, float angle2, float angle3, floa
   // Calculate average vector
   vec_R_x = (vec_R1_x + vec_R2_x + vec_R3_x)/3.0;
   vec_R_y = (vec_R1_y + vec_R2_y + vec_R3_y)/3.0;
-  */
-  float D = 0;
+  
   return abs(D);
 }
 
@@ -500,9 +572,9 @@ void Localization::computeBeaconVectors(float x_R, float y_R, float theta_R, flo
 }
 
 
-void Localization::computeMeasuredVectors(int peak[5][2], float vec_measured[5][2]) {
+void Localization::computeMeasuredVectors(int peak[4][2], float vec_measured[4][2]) {
   // Computes the vectors corresponding to the angle measurements from the linear cameras
-  for(int i=0; i<5; i++){
+  for(int i=0; i<4; i++){
     float angle = getAngleFromIndex(peak[i][1]);
     if(angle == INF) {
       vec_measured[i][0] = 0;
@@ -515,54 +587,54 @@ void Localization::computeMeasuredVectors(int peak[5][2], float vec_measured[5][
 }
 
 
-int Localization::findBeacon(int pixel_index, float rejection_range, float vec_theory[4][2]) {
-  // Finds the index of the beacon corresponding to angle index
-  if(pixel_index < 0 || pixel_index > 612) {
-    return -1;
-  }
+// int Localization::findBeacon(int pixel_index, float rejection_range, float vec_theory[4][2]) {
+//   // Finds the index of the beacon corresponding to angle index
+//   if(pixel_index < 0 || pixel_index > 612) {
+//     return -1;
+//   }
 
-  float mse = -INF;
-  int beacon = -2;
+//   float mse = -INF;
+//   int beacon = -2;
 
-  float vec_meas[2];
-  float angle = getAngleFromIndex(pixel_index);
+//   float vec_meas[2];
+//   float angle = getAngleFromIndex(pixel_index);
 
-  vec_meas[0] = cos(angle);
-  vec_meas[1] = sin(angle);
-  Serial.println(angle);
+//   vec_meas[0] = cos(angle);
+//   vec_meas[1] = sin(angle);
+//   Serial.println(angle);
 
-  // Compute angle between theoretical beacon and heading (to see which beacon corresponds to alpha1)
-  // Get vectors from previous pose and theoretical beacons
-  // I thought that it would be better to have this as a separate function, since it otherwise would be calculated everytime we ran this function which would be useless
+//   // Compute angle between theoretical beacon and heading (to see which beacon corresponds to alpha1)
+//   // Get vectors from previous pose and theoretical beacons
+//   // I thought that it would be better to have this as a separate function, since it otherwise would be calculated everytime we ran this function which would be useless
 
 
-  // Calculate metric (dot product) to determine best fit, get minimum //This made no sense originally, since the dot product is maximum when vectors are colinear :)
-  for (int i = 0; i < 4; ++i)
-  { 
-    float temp_x = (vec_theory[i][0] * vec_meas[0]);
-    float temp_y = (vec_theory[i][1] * vec_meas[1]);
-    float temp = (temp_x) + (temp_y);
-    if (temp > mse)
-    {
-      mse = temp;
-      beacon = i;
-    }
-  }
-  Serial.println(acos(mse));
-  Serial.println(mse);
-  if(acos(mse) < rejection_range) {
-    return beacon;
-  } else {
-    return -1;
-  }
-}
+//   // Calculate metric (dot product) to determine best fit, get minimum //This made no sense originally, since the dot product is maximum when vectors are colinear :)
+//   for (int i = 0; i < 4; ++i)
+//   { 
+//     float temp_x = (vec_theory[i][0] * vec_meas[0]);
+//     float temp_y = (vec_theory[i][1] * vec_meas[1]);
+//     float temp = (temp_x) + (temp_y);
+//     if (temp > mse)
+//     {
+//       mse = temp;
+//       beacon = i;
+//     }
+//   }
+//   Serial.println(acos(mse));
+//   Serial.println(mse);
+//   if(acos(mse) < rejection_range) {
+//     return beacon;
+//   } else {
+//     return -1;
+//   }
+// }
 
-void Localization::fullBeaconMatch(float vec_beacons[4][2], float vec_measured[5][2], int matchedBeacon[5]) {
+void Localization::fullBeaconMatch(float vec_beacons[4][2], float vec_measured[4][2], int matchedBeacon[4]) {
   // Finds the index of the beacons corresponding to all the measured angles at once by trying to maximize the scalar product between their vectors
 
   // Check the number of actual peaks measured
-  int nbPeaksMeasured = 5;
-  for(int i=0; i<5; i++) {
+  int nbPeaksMeasured = 4;
+  for(int i=0; i<4; i++) {
     if(vec_measured[i][0] == 0 && vec_measured[i][1] == 0)
       nbPeaksMeasured --;
   }
@@ -608,20 +680,16 @@ void Localization::fullBeaconMatch(float vec_beacons[4][2], float vec_measured[5
         matchedBeacon[k] = mod(matchConfig+k,4);
       else{
         float temp = vec_beacons[mod(matchConfig+k,4)][0] * vec_measured[k][0] + vec_beacons[mod(matchConfig+k,4)][1] * vec_measured[k][1];
-        if(acos(temp) < rejection_range) {
+        if(acos(temp) < REJECTION_ANGLE) {
           matchedBeacon[k] = mod(matchConfig+k,4);
         } else {
           matchedBeacon[k] = -1;
         }
       }
     }
-  } else
-    Serial.println("We fucked up!")
-    return;
-
-  return;
-
-
+  } else {
+    //Serial.println("We fucked up!");
+  }
 }
 
 float Localization::scalarProduct_4elem(float vec_1[4][2], float vec_2[4][2]) {
@@ -635,15 +703,15 @@ float Localization::scalarProduct_4elem(float vec_1[4][2], float vec_2[4][2]) {
 }
 
 
-int Localization::matchingValidPoints(int matchedBeacon[5]) {
+int Localization::matchingValidPoints(int matchedBeacon[4]) {
   int nb_matched = 0;
 
-  for(int i=0; i<5; i++) {
+  for(int i=0; i<4; i++) {
     if(matchedBeacon[i] != -1) {
       // count the valid beacons
       nb_matched++;
       // check for duplicates
-      for(int j=i+1; j<5; j++) {
+      for(int j=i+1; j<4; j++) {
         if(matchedBeacon[i] != -1) {
           if(matchedBeacon[i] == matchedBeacon[j])
             return -1;
@@ -658,7 +726,7 @@ int Localization::matchingValidPoints(int matchedBeacon[5]) {
 
 bool Localization::triangulation_4Point(float angles[4], int beacon, float &x_R, float &y_R, float &theta_R){
   // Does triangulation with 4 measurements of beacons  
-  /*
+  
   float temp_pos[4][2];
   float temp_orient[4][2];
   float d_error[4];
@@ -689,7 +757,7 @@ bool Localization::triangulation_4Point(float angles[4], int beacon, float &x_R,
   vec_x /= d_sum;
   vec_y /= d_sum;
   theta_R = atan2(vec_y, vec_x);
-*/
+
   return true;
 }
 
@@ -734,3 +802,4 @@ void Localization::swap(int &a, int &b) {
   a = b;
   b = temp;
 }
+

@@ -27,14 +27,14 @@ void setup()
 void loop()
 {
   //Wait for requests and take pictures in the meanwhile
-
+  lcam_reset();
   do {
     Serial.println("----------------------------------------------");
     Serial.println(millis());
     //lcam_integrate(50); // takes about 940 us at 50 us
     lcam_integrate(INTEGRATION_TIME);
     //delay(50);
-    lcam_reset(); // takes about 3540 us
+    //lcam_reset(); // takes about 3540 us
 
     // load pixel values to lcam_buffer byte array
     lcam_read();
@@ -57,7 +57,7 @@ void loop()
     localization.setTheta(THETA_START);
     
     // Update the pose
-    localization.calculatePose();
+    //localization.calculatePose();
 
     Serial.print("Position: (");
     Serial.print(localization.getX());
@@ -73,7 +73,7 @@ void loop()
   // lcam_read();
 
   //Requests available: process them
-  processBuffer();
+  // processBuffer();
 
   /*if(!(localization.done))
   {
@@ -95,47 +95,47 @@ void loop()
 }
 
 //current function reads the communication buffer and extracts the messages
-void processBuffer()
-{
-  while(Serial.available())
-  {
-    char input = Serial.read();
+// void processBuffer()
+// {
+//   while(Serial.available())
+//   {
+//     char input = Serial.read();
 
-    int cam;
-    //int i;
+//     int cam;
+//     //int i;
 
-    switch (input) {
+//     switch (input) {
 
-      /*case 'P': //Find a peak in a given range.
-        localization.done = 0;
+//       // case 'P': //Find a peak in a given range.
+//       //   localization.done = 0;
 
-        //localization.INF_CAM = Serial.parseInt();
-        //localization.sup = Serial.parseInt();
-        break;*/
+//       //   //localization.INF_CAM = Serial.parseInt();
+//       //   //localization.sup = Serial.parseInt();
+//       //   break;
 
-      /*case 'M': //Find multiple peaks in the given ranges
-        mlocalization.done = 0;
+//       // case 'M': //Find multiple peaks in the given ranges
+//       //   mlocalization.done = 0;
 
-        for(i=0;i<NBEACONS;i++)
-        {
-          mlocalization.INF_CAMs[i] = Serial.parseInt();
-          mlocalization.sups[i] = Serial.parseInt();
-        }
-        break;*/
+//       //   for(i=0;i<NBEACONS;i++)
+//       //   {
+//       //     mlocalization.INF_CAMs[i] = Serial.parseInt();
+//       //     mlocalization.sups[i] = Serial.parseInt();
+//       //   }
+//       //   break;
 
-      case 'C':
-        cam = Serial.parseInt();
-        localization.sendPicture(cam);
-        break;
+//       case 'C':
+//         cam = Serial.parseInt();
+//         localization.sendPicture(cam);
+//         break;
 
-      case 'R': //Reset
-        lcam_setup();
-        reset_request = 0;
-        break;
+//       case 'R': //Reset
+//         lcam_setup();
+//         reset_request = 0;
+//         break;
 
-      default: 
-        break;
-    }
-  }
-}
+//       default: 
+//         break;
+//     }
+//   }
+// }
 

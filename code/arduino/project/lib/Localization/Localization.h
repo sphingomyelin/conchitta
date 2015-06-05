@@ -7,8 +7,7 @@
 class Localization
 {
   public:
-  int done;
-  unsigned char *data;
+  int *data;
 
   Localization();
   float getPeakAngle(int index);
@@ -16,7 +15,7 @@ class Localization
   int getPeakIndex(int index);
   int calculatePeaks();
   bool calculatePose();
-  void sendPicture(int cam);
+  //void sendPicture(int cam);
   float getX();
   float getY();
   float getTheta();
@@ -26,25 +25,34 @@ class Localization
   void setTheta(float new_theta);
 
   private:
-  int peak[5][2];
-  int filtered_data[NCAMS*NPIXELS];
-  const int mask_highpass[13] = {-1, -1, -1, -1, -1, -1, 12, -1, -1, -1, -1, -1, -1};
-  const int mask_conv[9] = {1, 5, 16, 23, 28, 23, 16, 5, 1};
+  int peak[4][2];
+  float _vec_meas[4][2];
+  // int filtered_data[NCAMS*NPIXELS];
+  const int mask_highpass[2*WINDOW_HALF_WIDTH_HIGHPASS+1] = {-1, -1, -1, -1, -1, -1, 12, -1, -1, -1, -1, -1, -1};
+  const char mask_conv[2*WINDOW_HALF_WIDTH_CONV+1] = {1, 5, 16, 23, 28, 23, 16, 5, 1};
 
   float beacons[4][2]; // Initialize somewhere else
   float x;
   float y;
   float theta;
 
+  void preprocessPixels();
   float getAngleFromIndex(int index);
   int mod(int a, int b);
   float modf(float a, float b);
-  bool triangulation(float angle1, float angle2, float angle3, float x1, float y1, float x2, float y2, float x3, float y3, float &x_R, float &y_R, float &vec_R_x, float &vec_R_y);
+  float triangulation(float angle1, float angle2, float angle3, float x1, float y1, float x2, float y2, float x3, float y3, float &x_R, float &y_R, float &vec_R_x, float &vec_R_y);
   bool triangulation_4Point(float angles[4], int beacon, float &x_R, float &y_R, float &theta_R);
+
   void computeBeaconVectors(float x_R, float y_R, float theta_R, float vec_theory[4][2]);
-  int findBeacon(int pixel_index, float rejection_range, float vec_theory[4][2]);
-  int matchingValidPoints(int matchedBeacon[5]);
+  void computeMeasuredVectors(int peak[4][2], float vec_measured[4][2]);
+
+  // int findBeacon(int pixel_index, float rejection_range, float vec_theory[4][2]);
+  void fullBeaconMatch(float vec_beacons[4][2], float vec_measured[4][2], int matchedBeacon[4]);
+
+  int matchingValidPoints(int matchedBeacon[4]);
   void swap(int &a, int &b);
+  float scalarProduct_4elem(float vec_1[4][2], float vec_2[4][2]);
+  
 
 };
 

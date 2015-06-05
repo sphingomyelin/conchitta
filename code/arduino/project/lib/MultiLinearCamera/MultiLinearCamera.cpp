@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <avr/interrupt.h>
 
-unsigned char lcam_buffer[612];
+int lcam_buffer[612];
 
 void lcam_pulse()
 {
@@ -190,7 +190,7 @@ void lcam_read(void)
   }
 }
 
-unsigned char* lcam_getdata()
+int* lcam_getdata()
 {
   return lcam_buffer;
 }

@@ -14,7 +14,7 @@
 
 #include <avr/io.h>
 
-#define GAIN 31
+#define GAIN 30
 
 #define NPIXELS 102
 
@@ -40,7 +40,7 @@ void lcam_startintegration(void);
 void lcam_endintegration(void);
 void lcam_integrate(unsigned int microseconds);
 
-unsigned char* lcam_getdata(void);
+int* lcam_getdata(void);
 /*unsigned char* lcam_getdata1(void);
   unsigned char* lcam_getdata2(void);
   unsigned char* lcam_getdata3(void);
@@ -49,7 +49,7 @@ unsigned char* lcam_getdata(void);
 
 void lcam_read(void);
 
-unsigned char lcam_getpic(void);
+//unsigned char lcam_getpic(void);
 
 
 #endif

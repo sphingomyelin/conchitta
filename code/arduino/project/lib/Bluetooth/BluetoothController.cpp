@@ -94,10 +94,10 @@ void BluetoothController::getJoystickState(byte data[8])    {
 
 
   // Your code here ...
-  Serial.print("Joystick position:  ");
-  Serial.print(_joySteer);  
-  Serial.print(", ");  
-  Serial.println(_joySpeed); 
+ // Serial.print("Joystick position:  ");
+ // Serial.print(_joySteer);  
+ // Serial.print(", ");  
+ // Serial.println(_joySpeed); 
 }
 
 bool BluetoothController::buttonIsOn(int button) {

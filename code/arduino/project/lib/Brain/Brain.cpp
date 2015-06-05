@@ -67,7 +67,7 @@ void Brain::test() {
 }
 
 void Brain::run() {
-  Serial.println(millis());
+ // Serial.println(millis());
   Bluetooth.process();
   if(Bluetooth.buttonIsOn(2)) {
     execute_fsm();
@@ -180,8 +180,8 @@ void Brain::getPosNearestBottle() {
 
 // Communication with WildThumper
 void Brain::setSpeed(int speed, int steer) const {
-  Serial.print("Sending speed to WildThumper: ");
-  Serial.println(speed);
+ // Serial.print("Sending speed to WildThumper: ");
+ // Serial.println(speed);
   Wire.beginTransmission(4);
   Wire.write("v");                // set speed
   Wire.write((speed>>8)&0xFF);    // sends the most significant byte  
@@ -189,8 +189,8 @@ void Brain::setSpeed(int speed, int steer) const {
   Wire.endTransmission();
 
 
-  Serial.print("Sending steer to WildThumper: ");
-  Serial.println(steer);
+ // Serial.print("Sending steer to WildThumper: ");
+ // Serial.println(steer);
   Wire.beginTransmission(4);
   Wire.write("w");                // set steer (tangential)
   Wire.write((steer>>8)&0xFF);    // sends the most significant byte

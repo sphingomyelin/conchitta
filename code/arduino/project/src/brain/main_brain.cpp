@@ -8,13 +8,19 @@ void initDynamixel();
 void initBluetooth();
 bool bottle;
 unsigned long bottleStartTime;
+int valueRPI;
+char charRPI;
+unsigned char ucharRPI;
 
 void setup() {
+	
+	// SErial USB connection to RPI
+	Serial.begin(9600);
 
   // Serial USB connection to computer
-  Serial.begin(115200);
-  Serial.println("Start!");
-  Serial.println("");
+  //Serial.begin(115200);
+  //Serial.println("Start!");
+  //Serial.println("");
 
   // Serial2 Bluetooth connection to smartphone
   // 115200 = baud rate Bluetooth module
@@ -74,9 +80,9 @@ void loop() {
   //   Serial.print(bottle);
   //   Serial.print("  ");
   //   Serial.print(bottleStartTime);
-  //   Serial.print("  ");
-  //   Serial.println(analogRead(A7));
-
+  //   Serial.print("IR value:   ");
+  //   Serial.println(analogRead(A2));
+ //	delay (300);
   // } else if(millis() - bottleStartTime > 100) {
   //   bottleStartTime = -1;
   //   bottle = false;
@@ -95,12 +101,28 @@ void loop() {
   //   char c = Wire.read(); // receive a byte as character
   //   Serial.print(c);         // print the character
   // }
+  
+  //---------TEST COmmunication RPI ---------------------------
+  //valueRPI =  (int)Serial.read();
+  
+  if (Serial.available() > 0 ){
+//	  delay(5);
+		  valueRPI = Serial.read();
+		  Bluetooth.send(charRPI);
+		  Serial.print("I got : ");
+		  Serial.println('charRPI');
+    }
+  
+ // charRPI = Serial.read();
+ // Serial.print(valueRPI);
+ // ucharRPI = (unsigned char) charRPI;
 
   brain.run();
 
-  Bluetooth.send(5);
-  Bluetooth.send(4.89f);
-  Bluetooth.send("Hello World!");
+
+  Bluetooth.send(4.66f);
+  Bluetooth.send("charRPI");
+  
   //if(Serial2.available()) {
   //  Bluetooth.process();
   //}

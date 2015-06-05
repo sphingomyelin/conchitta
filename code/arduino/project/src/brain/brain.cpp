@@ -12,9 +12,9 @@ unsigned long bottleStartTime;
 void setup() {
 
   // Serial USB connection to computer
-  Serial.begin(115200);
-  Serial.println("Start!");
-  Serial.println("");
+  Serial.begin(9600);
+  // Serial.println("Start!");
+  // Serial.println("");
 
   // Serial2 Bluetooth connection to smartphone
   // 115200 = baud rate Bluetooth module
@@ -98,9 +98,9 @@ void loop() {
 
   brain.run();
 
-  Bluetooth.send(5);
-  Bluetooth.send(4.89f);
-  Bluetooth.send("Hello World!");
+  // Bluetooth.send(5);
+  // Bluetooth.send(4.89f);
+  // Bluetooth.send("Hello World!");
   //if(Serial2.available()) {
   //  Bluetooth.process();
   //}

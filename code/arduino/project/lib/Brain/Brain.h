@@ -36,8 +36,10 @@ class Brain {
     long last_blink;
     bool last_state_led;
     unsigned int _current_state;
-    int _startTime;
+    long _startTime;
     bool _trapIsOpen;
+
+    int _xBottle, _yBottle; 
 
     // State functions
     void execute_fsm();
@@ -56,7 +58,7 @@ class Brain {
     bool obstacleInTheWay();
 
     // Communication with RPi
-    void getPosNearestBottle();
+    bool getPosNearestBottle();
 
     // Communication with WildThumper
     void setSpeed(int speed, int steer) const;

@@ -57,6 +57,9 @@ void Brain::execute_fsm() {
     case AVOID_OBSTACLE_HOME:
       stateAvoidObstacleHome();
       break;
+    case STUCK_BOTTLE:
+      stateStuckBottle();
+      break;
   }
 }
 
@@ -151,6 +154,7 @@ void Brain::stateGetBottlesTransition() {
 void Brain::stateGetBottles() {
   // SEND("GET_BOTTLES_STATE");
   setStateRPi(RPI_GET_BOTTLES);
+  checkForNoStuckBottle();
   //Bluetooth.send((int)(_getbottles_time_turning+TIME_GOING_STRAIGHT));
   if(getBottleCount() > MAX_BOTTLES) {
     setState(GO_HOME);
@@ -158,6 +162,8 @@ void Brain::stateGetBottles() {
     setState(AVOID_OBSTACLE);
   } else if(getTimeMillis() > TIME_END_GO_HOME) {
     setState(GO_HOME);
+  } else if(hasStuckBottle()) {
+    setState(STUCK_BOTTLE);
   } else {
     if(getPosNearestBottle()) {
       SEND("BOTTLE! O.O");
@@ -196,11 +202,11 @@ void Brain::stateGetBottles() {
         // setSpeed(_speed, _steer);
         setSpeed(MAX_SPEED, 0);
       } else if(time_since_last_forward < (TIME_GOING_STRAIGHT + _getbottles_time_turning)) {
-        int direction = (int)(random(0, 2))*2-1;
-        setSpeed(0, direction*MAX_STEER);
+        setSpeed(0, _getbottles_direction*MAX_STEER);
       } else {
         _getbottles_last_forward_command = millis();
         _getbottles_time_turning = random(TIME_TURNING_MIN, TIME_TURNING_MAX);
+        _getbottles_direction = (int)(random(0, 2))*2-1;
       }
     }
   }
@@ -266,6 +272,18 @@ void Brain::stateAvoidObstacleHome() {
   setState(GO_HOME);
 }
 
+void Brain::stateStuckBottle() {
+  SEND("STUCK_BOTTLE");
+  setSpeed(0, 0);
+  turnBeltBackward();
+  int dir = random(0,2)*2-1;
+  setSpeed(-SLOW_SPEED, dir*SLOW_SPEED/2);
+  delay(1500);
+  setSpeed(0, 0);
+  turnBeltForward();
+  setState(GET_BOTTLES);
+}
+
 
 // functions used by state functions
 void Brain::approachNearestBottle() {
@@ -303,6 +321,20 @@ bool Brain::isHome() {
     return true;
   } else {
     return false;
+  }
+}
+
+bool hasStuckBottle() {
+  if(millis() - _stuckbottle_last_free > STUCK_BOTTLE_THRESHOLD_TIME) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void checkForNoStuckBottle() {
+  if(analogRead(IR_FRONT) < IR_FRONT_TH) {
+    _stuckbottle_last_free = millis();
   }
 }
 

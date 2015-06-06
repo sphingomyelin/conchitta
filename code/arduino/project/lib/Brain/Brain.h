@@ -52,6 +52,7 @@ class Brain {
     void stateReleaseBottles();
     void stateAvoidObstacle();
     void stateAvoidObstacleHome();
+    void stateStuckBottle();
 
     // functions used by state functions
     void approachNearestBottle();
@@ -59,6 +60,7 @@ class Brain {
     long getTimeMillis();
     bool obstacleInTheWay();
     bool isHome();
+    bool hasStuckBottle();
 
     // Communication with RPi
     bool getPosNearestBottle();
@@ -82,8 +84,10 @@ class Brain {
     //	VARIABLES OF STATES
     unsigned long _getbottles_last_forward_command;
     unsigned long _getbottles_time_turning;
+    int _getbottles_direction;
     int _getbottles_speed;
     int _getbottles_steer;
+    unsigned long _stuckbottle_last_free;
 
     // Test variable for now
     // unsigned long _last_state_change_rpi;

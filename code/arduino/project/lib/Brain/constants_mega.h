@@ -52,10 +52,10 @@ enum STATE_RPI
 #define IR_TOP_TH 280
 #define IR_CONTAINER_TH 280
 
-#define IR_OBST_FL A2
+#define IR_OBST_SR A2
 #define IR_OBST_FR A3
-#define IR_OBST_SL A4
-#define IR_OBST_SR A5
+#define IR_OBST_FL A4
+#define IR_OBST_SL A5
 
 #define IR_OBST_FL_TH 0
 #define IR_OBST_FR_TH 0

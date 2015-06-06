@@ -6,7 +6,7 @@
 #include "IOpins.h"
 //#include "Constant.h"
 
-#define EncoderTimerFrequency 20000
+#define EncoderTimerFrequency 15000
 #define SpeedTimerFrequency 100
 #define SpeedFilterCoeff 0
 

@@ -6,6 +6,7 @@
 Brain brain;
 void initDynamixel();
 void initBluetooth();
+void initLinCamComm();
 bool bottle;
 unsigned long bottleStartTime;
 
@@ -31,6 +32,9 @@ void setup() {
 
   // Set up the Wire for I2C
   Wire.begin();
+
+  // Set up communication with LinCam on UART3
+  initLinCamComm();
 
   // Check for bottles (test)
   // bottle = false;
@@ -147,4 +151,9 @@ void initDynamixel() {
 void initBluetooth() {
   Serial2.begin(115200);
   while(Serial2.available())  Serial2.read();// empty RX buffer
+}
+
+void initLinCamComm() {
+  Serial3.begin(115200);
+  while(Serial3.available())  Serial3.read();// empty RX buffer
 }

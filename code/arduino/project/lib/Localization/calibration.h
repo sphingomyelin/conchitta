@@ -15,6 +15,7 @@
 #define Y_START 2.7
 #define THETA_START  330   /180.0*PI
 
+#define LED_DETECTION_EXPIRATION_TIME 200
 
 #define INF_CAM 32000
 #define INF 32000

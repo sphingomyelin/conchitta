@@ -36,6 +36,10 @@ class Localization
   float y;
   float theta;
 
+  // unsigned long _findled_expiration = 0;
+  // int _xLed = 0;
+  // char _colorLed = 0;
+
   void preprocessPixels();
   float getAngleFromIndex(int index);
   int mod(int a, int b);

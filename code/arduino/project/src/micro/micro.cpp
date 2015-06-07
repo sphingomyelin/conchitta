@@ -13,6 +13,7 @@ Localization localization;
 void setup()
 {
   Serial.begin(115200); //Serial1.begin(9600);
+  Serial1.begin(115200);
 
   delay(5000);
   Serial.println("Start...");
@@ -65,6 +66,13 @@ void loop()
     Serial.print(localization.getY());
     Serial.print("), orientation: ");
     Serial.println(localization.getTheta());
+
+    Serial1.print("x");
+    Serial1.println(localization.getX());
+    Serial1.print("y");
+    Serial1.println(localization.getY());
+    Serial1.print("t");
+    Serial1.println(localization.getTheta());
     
   }
   while(!Serial.available());
@@ -93,7 +101,6 @@ void loop()
     Serial.print(")");
   }*/
 }
-
 
 
 //current function reads the communication buffer and extracts the messages

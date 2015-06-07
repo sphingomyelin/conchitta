@@ -21,6 +21,9 @@ Brain::Brain() {
   _bottle_here = true;
   _bottle_count = 0;
 
+
+  _findbottle_expiration = 0;
+  _findled_expiration = 0;
   // // Testing
   // _last_state_change_rpi = 0;
   // _state_rpi = 1;
@@ -71,6 +74,7 @@ void Brain::execute_fsm() {
 void Brain::run() {
   //Serial.println(millis());
   Bluetooth.process();
+  getPosFromLinCam(); // --------------- TESTING THIS -------------------
   if(Bluetooth.buttonIsOn(2)) {
     execute_fsm();
   } else {
@@ -389,7 +393,10 @@ bool Brain::getLed() {
   if(found_led) {
     Bluetooth.send(_xLed);
     Bluetooth.send((float)(_colorLed));
+    _findled_expiration = millis();
     // Bluetooth.send("REC LED");
+    return true;
+  } else if(millis() - _findled_expiration < LED_DETECTION_EXPIRATION_TIME) {
     return true;
   } else {
     // Bluetooth.send("NOT REC LED");
@@ -409,6 +416,41 @@ void Brain::setStateRPi(STATE_RPI stateRpi) {
       Serial.print("c");
       break;
     }
+}
+
+// Communication with Arduino Micro
+bool Brain::getPosFromLinCam() {
+  bool found_x = false, found_y = false, found_theta = false;
+  int x = 0, y = 0, theta = 0;
+  // delay(5);
+  // while(Serial.available() > 0) {
+  while((!found_x || !found_y || !found_theta) && Serial.available() > 0) {
+    char charRPI = Serial3.read();
+    if (charRPI=='x') {
+      found_x = true;
+      x = Serial3.parseInt();
+    } else if(charRPI=='y') {
+      found_y = true;
+      y = Serial3.parseInt();
+    } else if(charRPI=='t') {
+      found_theta = true;
+      theta = Serial3.parseInt();
+    }
+  }
+  // Discard everything in buffer
+  while(Serial3.read() != -1);
+
+ // ------------------------ INSERT THAT ONE VALUE COUNTS FOR SOME SECONDS -------------------------
+  if(found_x && found_y && found_theta) {
+    _xPosLinCam = x;
+    _yPosLinCam = y;
+    _thetaLinCam = theta;
+    // Bluetooth.send("REC X/Y");
+    return true;
+  } else {
+    // Bluetooth.send("NOT REC BOT");
+    return false;
+  }
 }
 
 // Communication with WildThumper
@@ -518,6 +560,10 @@ void Brain::closeTrap() {
   //Dynamixel.moveSpeed(DYMX_ID_TRAP, 500, 100);
 }
 
+
+int Brain::getXPosLinCam() {return _xPosLinCam;}
+int Brain::getYPosLinCam() {return _yPosLinCam;}
+int Brain::getThetaLinCam() {return _thetaLinCam;}
 
 /*int Brain::parseNextInt() {
   int parsedInt;

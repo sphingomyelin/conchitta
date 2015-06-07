@@ -800,3 +800,30 @@ void Localization::swap(int &a, int &b) {
   b = temp;
 }
 
+// bool Localization::getLed() {
+//   delay(5);
+//   bool found_led = false;
+//   while(!found_led && Serial.available() > 0) {
+//     char charRPI = Serial.read();
+//     if (charRPI=='g' || charRPI=='r' || charRPI=='b' || charRPI=='j') {
+//       found_led = true;
+//       _xLed = Serial.parseInt();
+//       _colorLed = charRPI;
+//     }
+//   }
+//   // Discard everything in buffer
+//   while(Serial.read() != -1);
+
+//   if(found_led) {
+//     Bluetooth.send(_xLed);
+//     Bluetooth.send((float)(_colorLed));
+//     _findled_expiration = millis();
+//     // Bluetooth.send("REC LED");
+//     return true;
+//   } else if(millis() - _findled_expiration < LED_DETECTION_EXPIRATION_TIME) {
+//     return true;
+//   } else {
+//     // Bluetooth.send("NOT REC LED");
+//     return false;
+//   }
+// }

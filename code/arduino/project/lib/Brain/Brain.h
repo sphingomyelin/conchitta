@@ -43,6 +43,8 @@ class Brain {
     int _xLed;
     int _speed, _steer;
 
+    int _xPosLinCam, _yPosLinCam, _thetaLinCam;
+
     // State functions
     void execute_fsm();
 
@@ -72,6 +74,12 @@ class Brain {
     void setStateRPi(STATE_RPI stateRpi);
     // int parseNextInt();
 
+    // Communication with Arduino Micro
+    bool getPosFromLinCam();
+    int getXPosLinCam();
+    int getYPosLinCam();
+    int getThetaLinCam();
+
     // Communication with WildThumper
     void setSpeed(int speed, int steer) const;
     void setSpeedAvoidingObstacles(int speed, int steer, float smoothing);
@@ -95,6 +103,8 @@ class Brain {
     unsigned long _stuckbottle_last_free;
 
     unsigned long _findbottle_expiration;
+    unsigned long _findled_expiration;
+
     int _bottle_at_ramp[5];
     int _bottle_check_index;
     bool _bottle_here;

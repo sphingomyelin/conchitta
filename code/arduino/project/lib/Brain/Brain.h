@@ -74,7 +74,7 @@ class Brain {
 
     // Communication with WildThumper
     void setSpeed(int speed, int steer) const;
-    void setSpeedAvoidingObstacles(int speed, int steer);
+    void setSpeedAvoidingObstacles(int speed, int steer, float smoothing);
     void stopMotors() const;
 
     // Dynamixel motors

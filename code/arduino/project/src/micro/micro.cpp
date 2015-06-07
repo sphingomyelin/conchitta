@@ -42,7 +42,7 @@ void loop()
     // get the peaks from the pixel data
     localization.calculatePeaks();
     // Display the peaks
-    for(int i = 0; i < 5; i++) {
+    for(int i = 0; i < 4; i++) {
       Serial.print("Peak height ");
       Serial.print(localization.getPeakHeight(i));
       Serial.print(" at index/angle ");
@@ -57,7 +57,7 @@ void loop()
     localization.setTheta(THETA_START);
     
     // Update the pose
-    //localization.calculatePose();
+    localization.calculatePose();
 
     Serial.print("Position: (");
     Serial.print(localization.getX());
@@ -93,6 +93,8 @@ void loop()
     Serial.print(")");
   }*/
 }
+
+
 
 //current function reads the communication buffer and extracts the messages
 // void processBuffer()

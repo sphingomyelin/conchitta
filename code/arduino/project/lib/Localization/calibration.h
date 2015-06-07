@@ -11,8 +11,8 @@
 #define REJECTION_ANGLE 20 *PI/180.0
 #define INTEGRATION_TIME 2000
 
-#define X_START 0.9
-#define Y_START 6.0
+#define X_START 3.0
+#define Y_START 2.7
 #define THETA_START  330   /180.0*PI
 
 

@@ -66,11 +66,7 @@ bool Localization::calculatePose() {
   // for(int i = 0; i < 4; i++) {
   //   matchedBeacon[i] = findBeacon(peak[i][1], REJECTION_ANGLE, beaconVector);
   // }
-  for(int i = 0; i < 4; i++) {
-    float angle = getAngleFromIndex(peak[i][1]);
-    _vec_meas[i][0] = cos(angle);
-    _vec_meas[i][1] = sin(angle);
-  }
+  computeMeasuredVectors(peak, _vec_meas);
 
   fullBeaconMatch(beaconVector, _vec_meas, matchedBeacon);
   // Count the number of matches
@@ -272,7 +268,7 @@ void Localization::preprocessPixels()
       current += mask_highpass[j]*data[mod((j-WINDOW_HALF_WIDTH_HIGHPASS) + i, (NCAMS*NPIXELS))];
     }
     if(current > highest_pixel) highest_pixel = current;
-    result_buffer[i] = current;
+    result_buffer[i-WINDOW_HALF_WIDTH_HIGHPASS] = current;
   }
 
   // Doing the rest, while using the buffer so as not to overwrite still used data
@@ -332,7 +328,7 @@ void Localization::preprocessPixels()
     {
       current += mask_conv[j]*data[mod((j-WINDOW_HALF_WIDTH_CONV) + i, (NCAMS*NPIXELS))];
     }
-    result_buffer[i] = current;
+    result_buffer[i-WINDOW_HALF_WIDTH_HIGHPASS] = current;
   }
   // Doing the rest, while using the buffer so as not to overwrite still used data
   for(i = 2*WINDOW_HALF_WIDTH_CONV; i < NCAMS*NPIXELS; i++)
@@ -664,6 +660,7 @@ void Localization::fullBeaconMatch(float vec_beacons[4][2], float vec_measured[4
     for(int j=0; j<4; j++) {
       float temp_matchPower = -INF;
       for(int l=0; l<4; l++) {
+        temp_matchPower = -INF;
         for(int k=0; k<4; k++) {
           if(k != l)
             temp_matchPower += vec_measured[k][0]*vec_beacons[mod(k+j,4)][0] + vec_measured[k][1]*vec_beacons[mod(k+j,4)][1];

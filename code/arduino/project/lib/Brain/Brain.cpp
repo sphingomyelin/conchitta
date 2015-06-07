@@ -233,11 +233,12 @@ void Brain::stateStuckBottle() {
 // functions used by state functions
 void Brain::approachNearestBottle() {
   // TODO: PID on the x and y of the nearest bottle
+  int speed, steer;
+  speed = (((240.0 - _yBottle) / 240.0) * 0.5 + 0.5) * MAX_SPEED; 
+  steer = ((_xBottle - 160.0) / 160.0) * MAX_STEER;
 
-  _speed = (int)_speed*(BOTTLE_SMOOTHING_RATIO) + (int)((1.0 - BOTTLE_SMOOTHING_RATIO) * ((((240.0 - _yBottle) / 240.0) * 0.5 + 0.5) * MAX_SPEED)); 
-  _steer = (int)_steer*(BOTTLE_SMOOTHING_RATIO) + (int)((1.0 - BOTTLE_SMOOTHING_RATIO) * (((_xBottle - 160.0) / 160.0) * MAX_STEER));
-
-  setSpeed(_speed, _steer);
+  setSpeedAvoidingObstacles(speed, steer, BOTTLE_SMOOTHING_RATIO);
+  //setSpeed(_speed, _steer);
 }
 
 void Brain::randomWalkAvoidingObstacles() {
@@ -246,8 +247,7 @@ void Brain::randomWalkAvoidingObstacles() {
   unsigned long time_since_last_forward = millis() - _getbottles_last_forward_command;
   if(time_since_last_forward < TIME_GOING_STRAIGHT) {
     // Go straight, but avoid obstacles if possible, but if not... tant pis
-    setSpeedAvoidingObstacles(MAX_SPEED, 0);
-
+    setSpeedAvoidingObstacles(MAX_SPEED, 0, IR_OBST_SMOOTHING_RATIO);
   } else if(time_since_last_forward < (TIME_GOING_STRAIGHT + _getbottles_time_turning)) {
     setSpeed(0, _getbottles_direction*MAX_STEER);
   } else {
@@ -438,7 +438,7 @@ void Brain::stopMotors() const {
   Wire.endTransmission();
 }
 
-void Brain::setSpeedAvoidingObstacles(int speed, int steer) {
+void Brain::setSpeedAvoidingObstacles(int speed, int steer, float smoothing) {
   // TODO
   int ir_obst_sl_valid = 0, ir_obst_sr_valid = 0, ir_obst_fl_valid = 0, ir_obst_fr_valid = 0;
   int ir_obst_sl_meas = analogRead(IR_OBST_SL);
@@ -446,24 +446,30 @@ void Brain::setSpeedAvoidingObstacles(int speed, int steer) {
   int ir_obst_fl_meas = analogRead(IR_OBST_FL);
   int ir_obst_fr_meas = analogRead(IR_OBST_FR);
   
-  _speed = (int) _speed*(IR_OBST_SMOOTHING_RATIO) + (1.0 - IR_OBST_SMOOTHING_RATIO) *
+  _speed = (int) (_speed*(smoothing) + (1.0 - smoothing) *
            (speed - (int)pow(1.0116,ir_obst_fl_meas)
-                  - (int)pow(1.0116,ir_obst_fr_meas));
+                  - (int)pow(1.0116,ir_obst_fr_meas)));
 
   if(ir_obst_sl_meas > IR_OBST_SL_TH) ir_obst_sl_valid = 1;
   if(ir_obst_sr_meas > IR_OBST_SR_TH) ir_obst_sr_valid = 1;
   if(ir_obst_fl_meas > IR_OBST_FL_TH) ir_obst_fl_valid = 1;
   if(ir_obst_fr_meas > IR_OBST_FR_TH) ir_obst_fr_valid = 1;
 
-  _steer = _steer*(IR_OBST_SMOOTHING_RATIO) + (1.0 - IR_OBST_SMOOTHING_RATIO) *
-           (steer +(0.3*ir_obst_sl_meas-0.3*IR_OBST_SMOOTHING_RATIO)*ir_obst_sl_valid 
-                  -(0.3*ir_obst_sr_meas-0.3*IR_OBST_SMOOTHING_RATIO)*ir_obst_sr_valid
-                  +(0.3*ir_obst_fl_meas-0.3*IR_OBST_SMOOTHING_RATIO)*ir_obst_fl_valid
-                  -(0.3*ir_obst_fr_meas-0.3*IR_OBST_SMOOTHING_RATIO)*ir_obst_fr_valid);
+  _steer = (int) (_steer*(smoothing) + (1.0 - smoothing) *
+           (steer +(0.3*ir_obst_sl_meas-0.3*IR_OBST_LOWER_THRESHOLD)*ir_obst_sl_valid 
+                  -(0.3*ir_obst_sr_meas-0.3*IR_OBST_LOWER_THRESHOLD)*ir_obst_sr_valid
+                  +(0.3*ir_obst_fl_meas-0.3*IR_OBST_LOWER_THRESHOLD)*ir_obst_fl_valid
+                  -(0.3*ir_obst_fr_meas-0.3*IR_OBST_LOWER_THRESHOLD)*ir_obst_fr_valid));
 
-  if(abs(_speed) > MAX_SPEED) {
+  if(_steer > MAX_STEER) _steer = MAX_STEER;
+  else if(_steer < -MAX_STEER) _steer = -MAX_STEER;
+
+  if(_speed > MAX_SPEED) {
     _steer = _steer * MAX_SPEED / abs(_speed);
     _speed = MAX_SPEED;
+  } else if(_speed < -MAX_SPEED) {
+    _steer = _steer * MAX_SPEED / abs(_speed);
+    _speed = -MAX_SPEED;
   }
   
   setSpeed(_speed, _steer);

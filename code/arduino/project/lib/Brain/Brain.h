@@ -36,6 +36,7 @@ class Brain {
     STATE _state; //unsigned int _current_state;
     long _startTime;
     bool _trapIsOpen;
+    int _bottle_count;
 
     int _xBottle, _yBottle;
     char _colorLed;
@@ -56,11 +57,14 @@ class Brain {
 
     // functions used by state functions
     void approachNearestBottle();
+    void randomWalkAvoidingObstacles();
     int getBottleCount();
     long getTimeMillis();
     bool obstacleInTheWay();
     bool isHome();
     bool hasStuckBottle();
+    void checkForNoStuckBottle();
+    void countBottles();
 
     // Communication with RPi
     bool getPosNearestBottle();
@@ -70,6 +74,7 @@ class Brain {
 
     // Communication with WildThumper
     void setSpeed(int speed, int steer) const;
+    void setSpeedAvoidingObstacles(int speed, int steer);
     void stopMotors() const;
 
     // Dynamixel motors
@@ -88,6 +93,12 @@ class Brain {
     int _getbottles_speed;
     int _getbottles_steer;
     unsigned long _stuckbottle_last_free;
+
+    unsigned long _findbottle_expiration;
+    int _bottle_at_ramp[5];
+    int _bottle_check_index;
+    bool _bottle_here;
+    unsigned long _bottle_detect_time;
 
     // Test variable for now
     // unsigned long _last_state_change_rpi;

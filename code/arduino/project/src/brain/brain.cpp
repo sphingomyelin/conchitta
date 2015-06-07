@@ -81,6 +81,31 @@ void loop() {
   //   bottleStartTime = -1;
   //   bottle = false;
   // }
+  
+  
+ //-------------TEST 2 IR--------------
+ //~        int ir_obst_sl_meas = analogRead(IR_OBST_SL);
+        //~ int ir_obst_sr_meas = analogRead(IR_OBST_SR);
+        //~ int ir_obst_fl_meas = analogRead(IR_OBST_FL);
+        //~ int ir_obst_fr_meas = analogRead(IR_OBST_FR);
+        //~ int ir_front_meas = analogRead(IR_FRONT);
+        //~ int ir_top_meas = analogRead(IR_TOP);
+        //~ 
+        //~ Serial.print("IR SR :");
+        //~ Serial.println(ir_obst_sr_meas);
+        //~ Serial.print("IR FR :");
+        //~ Serial.println(ir_obst_fr_meas);
+        //~ Serial.print("IR FL :");
+        //~ Serial.println(ir_obst_fl_meas);
+        //~ Serial.print("IR SL :");
+        //~ Serial.println(ir_obst_sl_meas);
+        //~ Serial.print("IR DOWN :");
+        //~ Serial.println(ir_front_meas);
+        //~ Serial.print("IR UP :");
+        //~ Serial.println(ir_top_meas);
+//~ 
+        //~ Serial.println("");
+        //~ delay(600);
 
   // ---------- TEST I2C ---------------
   // brain.test();

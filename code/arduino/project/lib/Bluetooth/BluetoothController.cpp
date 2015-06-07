@@ -109,58 +109,58 @@ void BluetoothController::getButtonState(int bStatus)  {
     // -----------------  BUTTON #1  -----------------------
     case 'A':
       buttonStatus |= B000001;        // ON
-      Serial.println("\n** Button_1: ON **");
+      // Serial.println("\n** Button_1: ON **");
       _buttonStatus[0] = true;
-      Serial.println("LED <ON>");
+      // Serial.println("LED <ON>");
       digitalWrite(ledPin, HIGH);
       break;
     case 'B':
       buttonStatus &= B111110;        // OFF
-      Serial.println("\n** Button_1: OFF **");
+      // Serial.println("\n** Button_1: OFF **");
       _buttonStatus[0] = false;
-      Serial.println("LED <OFF>");
+      // Serial.println("LED <OFF>");
       digitalWrite(ledPin, LOW);
       break;
 
       // -----------------  BUTTON #2  -----------------------
     case 'C':
       buttonStatus |= B000010;        // ON
-      Serial.println("\n** Button_2: ON **");
+      // Serial.println("\n** Button_2: ON **");
       _buttonStatus[1] = true;
-      Serial.println("Autonomous Mode <ON>");
+      // Serial.println("Autonomous Mode <ON>");
       break;
     case 'D':
       buttonStatus &= B111101;        // OFF
-      Serial.println("\n** Button_2: OFF **");
+      // Serial.println("\n** Button_2: OFF **");
       _buttonStatus[1] = false;
-      Serial.println("Autonomous Mode <OFF>");
+      // Serial.println("Autonomous Mode <OFF>");
       break;
 
       // -----------------  BUTTON #3  -----------------------
     case 'E':
       buttonStatus |= B000100;        // ON
-      Serial.println("\n** Button_3: ON **");
+      // Serial.println("\n** Button_3: ON **");
       _buttonStatus[2] = true;
-      Serial.println("Motors enabled");
+      // Serial.println("Motors enabled");
       break;
     case 'F':
       buttonStatus &= B111011;      // OFF
-      Serial.println("\n** Button_3: OFF **");
+      // Serial.println("\n** Button_3: OFF **");
       _buttonStatus[2] = false;
-      Serial.println("Motors stopped");
+      // Serial.println("Motors stopped");
       break;
 
       // -----------------  BUTTON #4  -----------------------
     case 'G':
       buttonStatus |= B001000;       // ON
-      Serial.println("\n** Button_4: ON **");
+      // Serial.println("\n** Button_4: ON **");
       _buttonStatus[3] = true;
       //Serial.println("Datafield update <FAST>");
       //sendInterval = FAST;
       break;
     case 'H':
       buttonStatus &= B110111;    // OFF
-      Serial.println("\n** Button_4: OFF **");
+      // Serial.println("\n** Button_4: OFF **");
       _buttonStatus[3] = false;
       //Serial.println("Datafield update <SLOW>");
       //sendInterval = SLOW;
@@ -169,7 +169,7 @@ void BluetoothController::getButtonState(int bStatus)  {
       // -----------------  BUTTON #5  -----------------------
     case 'I':           // configured as momentary button
       buttonStatus |= B010000;        // ON
-      Serial.println("\n** Button_5: ++ pushed ++ **");
+      // Serial.println("\n** Button_5: ++ pushed ++ **");
       _buttonStatus[4] = true;
       break;
     case 'J':
@@ -179,12 +179,12 @@ void BluetoothController::getButtonState(int bStatus)  {
       // -----------------  BUTTON #6  -----------------------
     case 'K':
       buttonStatus |= B100000;        // ON
-      Serial.println("\n** Button_6: ON **");
+      // Serial.println("\n** Button_6: ON **");
       _buttonStatus[5] = true;
       break;
     case 'L':
       buttonStatus &= B011111;        // OFF
-      Serial.println("\n** Button_6: OFF **");
+      // Serial.println("\n** Button_6: OFF **");
       _buttonStatus[5] = false;
       break;
   }

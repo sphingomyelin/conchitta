@@ -81,12 +81,16 @@ void Brain::run() {
 
   // --------------------------------------------- TESTING ----------------------------------------------------- TODO
 
+    Bluetooth.send((float)((int)(_xPosLinCam*10.0) + ((int)(_yPosLinCam*10.0))/100.0));
+    // Bluetooth.send((float)analogRead(IR_FRONT));
     Bluetooth.send("RC Mode");
     countBottles();
-    Bluetooth.send(getBottleCount());
+    // Bluetooth.send(getBottleCount());
+    Bluetooth.send(analogRead(IR_FRONT));
     if (Bluetooth.buttonIsOn(3)) {
       stopMotors();
     } else {
+      // ----------------------------- TESTING --------------------------------------------
       setSpeed((int)Bluetooth.getSpeed()*1.4, (int)Bluetooth.getSteer()*1.4);
     }
     if(Bluetooth.buttonIsOn(5)) {
@@ -138,13 +142,13 @@ void Brain::stateGetBottles() {
     setState(GO_HOME);
   } else if(getBottleCount() > MAX_BOTTLES) {
     setState(GO_HOME);
-  } else if(obstacleInTheWay()) {
+  } /*else if(obstacleInTheWay()) {
     setState(AVOID_OBSTACLE);
-  } else if(hasStuckBottle()) {
+  }*/ else if(hasStuckBottle()) {
     setState(STUCK_BOTTLE);
   } else {
     if(getPosNearestBottle()) {
-      SEND("BOTTLE! O.O");
+      SEND("BOTTLE O.O");
       approachNearestBottle();
     } else {
       randomWalkAvoidingObstacles();
@@ -161,12 +165,12 @@ void Brain::stateGoHome() {
   }
   if(getLed()) {
     if(_colorLed == 'j') {
-      setSpeed(SLOW_SPEED, ((_xBottle - 160.0) / 160.0) * SLOW_STEER);
+      setSpeedAvoidingObstacles(MAX_SPEED, ((_xBottle - 160.0) / 160.0) * SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
     } else {
-      setSpeed(0, SLOW_STEER);
+      setSpeed(_speed*(IR_OBST_SMOOTHING_RATIO), _steer*(IR_OBST_SMOOTHING_RATIO) + (1.0-IR_OBST_SMOOTHING_RATIO)*SLOW_STEER);
     }
   } else {
-    setSpeed(0, SLOW_STEER);
+    setSpeed(_speed*(IR_OBST_SMOOTHING_RATIO), _steer*(IR_OBST_SMOOTHING_RATIO) + (1.0-IR_OBST_SMOOTHING_RATIO)*SLOW_STEER);
   }
 
 }
@@ -176,12 +180,15 @@ void Brain::stateReleaseBottles() {
   // TODO: TURN 180 DEGREES properly
   int started_turning = millis();
   while(started_turning - millis() < TIME_TURNING_RELEASE_BOTTLES) {
-    setSpeed(0, MAX_STEER);
+    setSpeedAvoidingObstacles(0, MAX_STEER, IR_OBST_SMOOTHING_RATIO);
   }
   setSpeed(0, 0);
   openTrap();
   setSpeed(MAX_SPEED, 0);
-  delay(200);
+  delay(100);
+  setSpeed(-MAX_SPEED, 0);
+  delay(100);
+  setSpeed(MAX_SPEED, 0);
   setSpeed(0,0);
   turnBeltBackward();  //jai rajouté ca sur idée de charlotte ;-)
   delay(10000);
@@ -192,6 +199,7 @@ void Brain::stateReleaseBottles() {
       delay(1000);
     }
   }
+  _bottle_count = 0;
   setState(GET_BOTTLES);
 }
 
@@ -200,9 +208,9 @@ void Brain::stateAvoidObstacle() {
   Bluetooth.send("Avoid obstacle");
   // TODO
   int dir = random(0,2)*2-1;
-  setSpeed(0, dir*SLOW_STEER);
+  setSpeedAvoidingObstacles(0, dir*SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
   delay(TIME_TURNING_RELEASE_BOTTLES);
-  setSpeed(SLOW_SPEED, 0);
+  setSpeedAvoidingObstacles(SLOW_SPEED, 0, IR_OBST_SMOOTHING_RATIO);
   setState(GET_BOTTLES);
 }
 
@@ -211,11 +219,11 @@ void Brain::stateAvoidObstacleHome() {
  
   // TODO
   int dir = random(0,2)*2-1;
-  setSpeed(0, dir*SLOW_STEER);
+  setSpeedAvoidingObstacles(0, dir*SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
   delay(TIME_TURNING_RELEASE_BOTTLES/2);
-  setSpeed(SLOW_SPEED, 0);
+  setSpeedAvoidingObstacles(SLOW_SPEED, 0, IR_OBST_SMOOTHING_RATIO);
   delay(TIME_TURNING_RELEASE_BOTTLES);
-  setSpeed(0, -dir*SLOW_STEER);
+  setSpeedAvoidingObstacles(0, -dir*SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
   delay(TIME_TURNING_RELEASE_BOTTLES/2);
   setState(GO_HOME);
 }
@@ -225,11 +233,19 @@ void Brain::stateStuckBottle() {
   setSpeed(0, 0);
   turnBeltBackward();
   delay(2000);
-  int dir = random(0,2)*2-1;
-  setSpeed(0, dir*SLOW_SPEED);
-  delay(1500);
+  int dir = 0;
+  if(_bottle_stuck[_median_index_stuck_bottle] > STUCK_BOTTLE_IN_THE_MIDDLE_IR_VALUE) {
+    dir = 1;
+  } else {
+    dir = -1;
+  }
+  unsigned long turning_time = millis();
+  while(millis() - turning_time < 2500) {
+    setSpeedAvoidingObstacles(SLOW_SPEED, dir*SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
+  }
   setSpeed(0, 0);
   turnBeltForward();
+  _stuckbottle_last_free = millis();
   setState(GET_BOTTLES);
 }
 
@@ -283,11 +299,35 @@ bool Brain::obstacleInTheWay() {
 
 bool Brain::isHome() {
   // TODO
-  if(getTimeMillis() > TIME_END - 20000) {
-    return true;
-  } else {
-    return false;
+  // if(getTimeMillis() > TIME_END - 20000) {
+  //   return true;
+  // } else {
+  //   return false;
+  // }
+
+  if(_found_intensity) {
+    _led_home[_led_home_index] = _colorIntensity;
+    _led_home_index = (_led_home_index + 1) % LED_INTENSITY_MEDIAN_SIZE;
+    // Calculate the pseudo-median
+    int avg = 0;
+    for(int i = 0; i < LED_INTENSITY_MEDIAN_SIZE; i++) {
+      avg += _led_home[i];
+    }
+    avg /= LED_INTENSITY_MEDIAN_SIZE;
+    int median_index = 0, diff = 20000;
+    for(int i = 0; i < LED_INTENSITY_MEDIAN_SIZE; i++) {
+      if(abs(avg - _led_home[i]) < diff) {
+        diff = abs(avg - _led_home[i]);
+        median_index = i;
+      }
+    }
+
+    if(_led_home[median_index] > HOME_INTENSITY_THRESHOLD) {
+      return true;
+    }
   }
+
+  return false;
 }
 
 bool Brain::hasStuckBottle() {
@@ -295,11 +335,32 @@ bool Brain::hasStuckBottle() {
     return true;
   } else {
     return false;
-  }
+  }  
 }
 
 void Brain::checkForNoStuckBottle() {
-  if(analogRead(IR_FRONT) < IR_FRONT_TH) {
+  // if(analogRead(IR_FRONT) > IR_FRONT_TH) {
+  //   _stuckbottle_last_free = millis();
+  // }
+
+  _bottle_stuck[_bottle_stuck_check_index] = analogRead(IR_FRONT);
+  _bottle_stuck_check_index = (_bottle_stuck_check_index + 1) % BOTTLE_STUCK_MEDIAN_SIZE;
+  // Calculate the pseudo-median
+  int avg = 0;
+  for(int i = 0; i < BOTTLE_STUCK_MEDIAN_SIZE; i++) {
+    avg += _bottle_stuck[i];
+  }
+  avg /= BOTTLE_STUCK_MEDIAN_SIZE;
+  int diff = 20000;
+  _median_index_stuck_bottle = 0;
+  for(int i = 0; i < BOTTLE_STUCK_MEDIAN_SIZE; i++) {
+    if(abs(avg - _bottle_stuck[i]) < diff) {
+      diff = abs(avg - _bottle_stuck[i]);
+      _median_index_stuck_bottle = i;
+    }
+  }
+
+  if(_bottle_stuck[_median_index_stuck_bottle] < IR_FRONT_TH) {
     _stuckbottle_last_free = millis();
   }
 }
@@ -338,7 +399,7 @@ void Brain::countBottles() {
 bool Brain::getPosNearestBottle() {
   bool found_x = false, found_y = false;
   int xBottle = 0, yBottle = 0;
-  delay(5);
+  // delay(5); // ----------------------------TESTING REMOVED!!!!!! ---------------------------------------------------
   // while(Serial.available() > 0) {
   while((!found_x || !found_y) && Serial.available() > 0) {
     char charRPI = Serial.read();
@@ -353,7 +414,6 @@ bool Brain::getPosNearestBottle() {
   // Discard everything in buffer
   while(Serial.read() != -1);
 
- // ------------------------ INSERT THAT ONE VALUE COUNTS FOR SOME SECONDS -------------------------
   if(found_x && found_y) {
     _xBottle = xBottle;
     _yBottle = yBottle;
@@ -377,14 +437,18 @@ bool Brain::getLed() {
   //   Bluetooth.send(Serial.readString());
   // }
   
-  delay(5);
+  // delay(5); // ----------------------------TESTING REMOVED!!!!!! ---------------------------------------------------
   bool found_led = false;
-  while(!found_led && Serial.available() > 0) {
+  _found_intensity = false;
+  while((!found_led || !_found_intensity) && Serial.available() > 0) {
     char charRPI = Serial.read();
     if (charRPI=='g' || charRPI=='r' || charRPI=='b' || charRPI=='j') {
       found_led = true;
       _xLed = Serial.parseInt();
       _colorLed = charRPI;
+    } else if(charRPI=='h') {
+      _found_intensity = true;
+      _colorIntensity = Serial.parseInt();
     }
   }
   // Discard everything in buffer
@@ -392,14 +456,16 @@ bool Brain::getLed() {
 
   if(found_led) {
     Bluetooth.send(_xLed);
-    Bluetooth.send((float)(_colorLed));
+    Bluetooth.send((float)(_colorIntensity));
     _findled_expiration = millis();
     // Bluetooth.send("REC LED");
     return true;
   } else if(millis() - _findled_expiration < LED_DETECTION_EXPIRATION_TIME) {
+    _found_intensity = false;
     return true;
   } else {
     // Bluetooth.send("NOT REC LED");
+    _found_intensity = false;
     return false;
   }
 }
@@ -424,7 +490,7 @@ bool Brain::getPosFromLinCam() {
   int x = 0, y = 0, theta = 0;
   // delay(5);
   // while(Serial.available() > 0) {
-  while((!found_x || !found_y || !found_theta) && Serial.available() > 0) {
+  while((!found_x || !found_y || !found_theta) && Serial3.available() > 0) {
     char charRPI = Serial3.read();
     if (charRPI=='x') {
       found_x = true;
@@ -487,21 +553,21 @@ void Brain::setSpeedAvoidingObstacles(int speed, int steer, float smoothing) {
   int ir_obst_sr_meas = analogRead(IR_OBST_SR);
   int ir_obst_fl_meas = analogRead(IR_OBST_FL);
   int ir_obst_fr_meas = analogRead(IR_OBST_FR);
-  
-  _speed = (int) (_speed*(smoothing) + (1.0 - smoothing) *
-           (speed - (int)pow(1.0116,ir_obst_fl_meas)
-                  - (int)pow(1.0116,ir_obst_fr_meas)));
 
   if(ir_obst_sl_meas > IR_OBST_SL_TH) ir_obst_sl_valid = 1;
   if(ir_obst_sr_meas > IR_OBST_SR_TH) ir_obst_sr_valid = 1;
   if(ir_obst_fl_meas > IR_OBST_FL_TH) ir_obst_fl_valid = 1;
   if(ir_obst_fr_meas > IR_OBST_FR_TH) ir_obst_fr_valid = 1;
 
+  _speed = (int) (_speed*(smoothing) + (1.0 - smoothing) *
+           (speed - (int)ir_obst_fl_valid*pow(3.15,ir_obst_fl_meas/100.0)
+                  - (int)ir_obst_fr_valid*pow(3.15,ir_obst_fr_meas/100.0)));
+
   _steer = (int) (_steer*(smoothing) + (1.0 - smoothing) *
-           (steer +(0.3*ir_obst_sl_meas-0.3*IR_OBST_LOWER_THRESHOLD)*ir_obst_sl_valid 
-                  -(0.3*ir_obst_sr_meas-0.3*IR_OBST_LOWER_THRESHOLD)*ir_obst_sr_valid
-                  +(0.3*ir_obst_fl_meas-0.3*IR_OBST_LOWER_THRESHOLD)*ir_obst_fl_valid
-                  -(0.3*ir_obst_fr_meas-0.3*IR_OBST_LOWER_THRESHOLD)*ir_obst_fr_valid));
+           (steer +(LINEARITY*ir_obst_sl_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD)*ir_obst_sl_valid 
+                  -(LINEARITY*ir_obst_sr_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD)*ir_obst_sr_valid
+                  +(LINEARITY*ir_obst_fl_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD)*ir_obst_fl_valid
+                  -(LINEARITY*ir_obst_fr_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD)*ir_obst_fr_valid));
 
   if(_steer > MAX_STEER) _steer = MAX_STEER;
   else if(_steer < -MAX_STEER) _steer = -MAX_STEER;
@@ -513,6 +579,18 @@ void Brain::setSpeedAvoidingObstacles(int speed, int steer, float smoothing) {
     _steer = _steer * MAX_SPEED / abs(_speed);
     _speed = -MAX_SPEED;
   }
+
+  if(abs(_speed) < LOW_SPEED_STEER_TURNING_THRESHOLD && abs(_steer) < LOW_SPEED_STEER_TURNING_THRESHOLD) {
+    if(!_stuck_in_corner) {
+      _dir_stuck_in_corner = random(0,2)*2-1;
+      _stuck_in_corner = true;
+    }
+    _speed = -SLOW_SPEED_BACK_WHEN_STUCK_IN_CORNER;
+    _steer = _dir_stuck_in_corner * SLOW_STEER;
+  } else {
+    _stuck_in_corner = false;
+  }
+
   
   setSpeed(_speed, _steer);
 

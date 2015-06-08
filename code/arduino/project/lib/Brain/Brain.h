@@ -39,7 +39,7 @@ class Brain {
     int _bottle_count;
 
     int _xBottle, _yBottle;
-    char _colorLed;
+    char _colorLed, _colorIntensity;
     int _xLed;
     int _speed, _steer;
 
@@ -105,10 +105,21 @@ class Brain {
     unsigned long _findbottle_expiration;
     unsigned long _findled_expiration;
 
-    int _bottle_at_ramp[5];
+    int _bottle_stuck[BOTTLE_STUCK_MEDIAN_SIZE];
+    int _bottle_stuck_check_index;
+    int _median_index_stuck_bottle;
+
+    int _led_home[LED_INTENSITY_MEDIAN_SIZE];
+    int _led_home_index;
+    int _found_intensity = false;
+
+    int _bottle_at_ramp[BOTTLE_COUNT_MEDIAN_SIZE];
     int _bottle_check_index;
     bool _bottle_here;
     unsigned long _bottle_detect_time;
+
+    bool _stuck_in_corner = false;
+    int _dir_stuck_in_corner = -1;
 
     // Test variable for now
     // unsigned long _last_state_change_rpi;

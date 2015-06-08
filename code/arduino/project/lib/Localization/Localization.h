@@ -13,8 +13,10 @@ class Localization
   float getPeakAngle(int index);
   float getPeakHeight(int index);
   int getPeakIndex(int index);
+  void preprocessPixels();
   int calculatePeaks();
   bool calculatePose();
+  void goingHome();
   //void sendPicture(int cam);
   float getX();
   float getY();
@@ -40,7 +42,6 @@ class Localization
   // int _xLed = 0;
   // char _colorLed = 0;
 
-  void preprocessPixels();
   float getAngleFromIndex(int index);
   int mod(int a, int b);
   float modf(float a, float b);

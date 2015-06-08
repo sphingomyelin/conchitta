@@ -11,9 +11,9 @@
 #define REJECTION_ANGLE 20 *PI/180.0
 #define INTEGRATION_TIME 2000
 
-#define X_START 3.0
-#define Y_START 2.7
-#define THETA_START  330   /180.0*PI
+#define X_START 0.5
+#define Y_START 0.5
+#define THETA_START  0   /180.0*PI
 
 #define LED_DETECTION_EXPIRATION_TIME 200
 
@@ -24,6 +24,8 @@
 #define NPIXELS 102
 
 #define NCAMS 6
+
+#define SMOOTHING 0.3
 
 /*int angle2px[360] = 
 {

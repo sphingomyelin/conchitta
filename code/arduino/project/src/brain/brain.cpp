@@ -15,7 +15,7 @@ void setup() {
   // Serial USB connection to computer
   Serial.begin(9600);
   delay(10000);
-  SEND("Start!");
+  SEND("Start");
 
   // Serial2 Bluetooth connection to smartphone
   // 115200 = baud rate Bluetooth module

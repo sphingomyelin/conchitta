@@ -30,8 +30,8 @@ void loop()
   //Wait for requests and take pictures in the meanwhile
   lcam_reset();
   do {
-    Serial.println("----------------------------------------------");
-    Serial.println(millis());
+    // Serial.println("----------------------------------------------");
+    // Serial.println(millis());
     //lcam_integrate(50); // takes about 940 us at 50 us
     lcam_integrate(INTEGRATION_TIME);
     //delay(50);
@@ -40,32 +40,35 @@ void loop()
     // load pixel values to lcam_buffer byte array
     lcam_read();
 
-    // get the peaks from the pixel data
+    localization.goingHome();    
+
+    // get the peaks from the pixel data    
+    localization.preprocessPixels();
     localization.calculatePeaks();
     // Display the peaks
-    for(int i = 0; i < 4; i++) {
-      Serial.print("Peak height ");
-      Serial.print(localization.getPeakHeight(i));
-      Serial.print(" at index/angle ");
-      Serial.print(localization.getPeakIndex(i));
-      Serial.print("/");
-      Serial.println(localization.getPeakAngle(i));
-    }
+    // for(int i = 0; i < 4; i++) {
+    //   Serial.print("Peak height ");
+    //   Serial.print(localization.getPeakHeight(i));
+    //   Serial.print(" at index/angle ");
+    //   Serial.print(localization.getPeakIndex(i));
+    //   Serial.print("/");
+    //   Serial.println(localization.getPeakAngle(i));
+    // }
 
     // Reinitializing pose estimate to START values for debugging
-    localization.setX(X_START);
-    localization.setY(Y_START);
-    localization.setTheta(THETA_START);
+    // localization.setX(X_START);
+    // localization.setY(Y_START);
+    // localization.setTheta(THETA_START);
     
     // Update the pose
     localization.calculatePose();
 
-    Serial.print("Position: (");
-    Serial.print(localization.getX());
-    Serial.print(", ");
-    Serial.print(localization.getY());
-    Serial.print("), orientation: ");
-    Serial.println(localization.getTheta());
+    // Serial.print("Position: (");
+    // Serial.print(localization.getX());
+    // Serial.print(", ");
+    // Serial.print(localization.getY());
+    // Serial.print("), orientation: ");
+    // Serial.println(localization.getTheta());
 
     Serial1.print("x");
     Serial1.println(localization.getX());

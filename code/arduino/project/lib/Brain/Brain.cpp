@@ -24,6 +24,7 @@ Brain::Brain() {
 
   _findbottle_expiration = 0;
   _findled_expiration = 0;
+  _flag_go_again = false;
   // // Testing
   // _last_state_change_rpi = 0;
   // _state_rpi = 1;
@@ -143,7 +144,7 @@ void Brain::stateGetBottles() {
   checkForNoStuckBottle();
   countBottles();
   //Bluetooth.send((int)(_getbottles_time_turning+TIME_GOING_STRAIGHT));
-  if(getTimeMillis() > TIME_END_GO_HOME) {
+  if(getTimeMillis() > TIME_END_GO_HOME && !_flag_go_again) {
     setState(GO_HOME);
     return;
   } else if(getBottleCount() > MAX_BOTTLES) {
@@ -211,29 +212,30 @@ void Brain::stateReleaseBottles() {
 
   while(1) {
     if(getEndLinCam()) {
-      if(abs(_b_index) < 10) {
+      if(abs(_b_index) < 30) {
         setSpeed(0, 0);
         break;
       }
     }
-    setSpeedAvoidingObstacles(0, MAX_STEER, IR_OBST_SMOOTHING_RATIO);
+    setSpeed(0, SLOW_STEER);
   }
+  setSpeed(SLOW_SPEED, 0);
+  delay(2000);
   setSpeed(0, 0);
   openTrap();
   setSpeed(MAX_SPEED, 0);
-  delay(100);
+  delay(500);
   setSpeed(-MAX_SPEED, 0);
-  delay(100);
+  delay(500);
   setSpeed(MAX_SPEED, 0);
   setSpeed(0,0);
   turnBeltBackward();  //jai rajouté ca sur idée de charlotte ;-)
   delay(10000);
+  stopBelt();
+  setSpeed(SLOW_SPEED, 0);
   closeTrap();
   if(getTimeMillis() > TIME_END_GO_HOME) {
-    while(1) {
-      // TODO: SOMETHING FUNNY
-      delay(1000);
-    }
+    _flag_go_again = true;
   }
   _bottle_count = 0;
   setState(GET_BOTTLES);
@@ -319,7 +321,7 @@ int Brain::getBottleCount() {
   return _bottle_count;
 }
 
-long Brain::getTimeMillis() {
+unsigned long Brain::getTimeMillis() {
   return millis() - _startTime; 
 }
 
@@ -366,7 +368,7 @@ bool Brain::isHome() {
   // }
 
   if(getEndLinCam()) {
-    if(_f_nb > 10) {
+    if(_f_nb >= LED_PEAK_ON_MAX_DURING_GO_HOME) {
       return true;
     }
   }
@@ -631,18 +633,18 @@ void Brain::setSpeedAvoidingObstacles(int speed, int steer, float smoothing) {
 
   if(ir_obst_sl_meas > IR_OBST_LOWER_THRESHOLD) ir_obst_sl_valid = 1;
   if(ir_obst_sr_meas > IR_OBST_LOWER_THRESHOLD) ir_obst_sr_valid = 1;
-  if(ir_obst_fl_meas > IR_OBST_LOWER_THRESHOLD) ir_obst_fl_valid = 1;
-  if(ir_obst_fr_meas > IR_OBST_LOWER_THRESHOLD) ir_obst_fr_valid = 1;
+  if(ir_obst_fl_meas > IR_OBST_LOWER_THRESHOLD_SPEED) ir_obst_fl_valid = 1;
+  if(ir_obst_fr_meas > IR_OBST_LOWER_THRESHOLD_SPEED) ir_obst_fr_valid = 1;
 
   _speed = (int) (_speed*(smoothing) + (1.0 - smoothing) *
-           (speed - (LINEARITY_SPEED*ir_obst_fl_meas-LINEARITY_SPEED*IR_OBST_LOWER_THRESHOLD)*ir_obst_fl_valid
-                  - (LINEARITY_SPEED*ir_obst_fr_meas-LINEARITY_SPEED*IR_OBST_LOWER_THRESHOLD)*ir_obst_fr_valid));
+           (speed - (LINEARITY_SPEED*ir_obst_fl_meas-LINEARITY_SPEED*IR_OBST_LOWER_THRESHOLD_SPEED)*ir_obst_fl_valid
+                  - (LINEARITY_SPEED*ir_obst_fr_meas-LINEARITY_SPEED*IR_OBST_LOWER_THRESHOLD_SPEED)*ir_obst_fr_valid));
 
   _steer = (int) (_steer*(smoothing) + (1.0 - smoothing) *
            (steer +(LINEARITY*ir_obst_sl_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD)*ir_obst_sl_valid 
                   -(LINEARITY*ir_obst_sr_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD)*ir_obst_sr_valid
-                  +(LINEARITY*ir_obst_fl_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD)*ir_obst_fl_valid
-                  -(LINEARITY*ir_obst_fr_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD)*ir_obst_fr_valid));
+                  +(LINEARITY*ir_obst_fl_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD_SPEED)*ir_obst_fl_valid
+                  -(LINEARITY*ir_obst_fr_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD_SPEED)*ir_obst_fr_valid));
 
   if(_steer > MAX_STEER) _steer = MAX_STEER;
   else if(_steer < -MAX_STEER) _steer = -MAX_STEER;
@@ -708,7 +710,7 @@ void Brain::openTrap() {
 }
 
 void Brain::closeTrap() {
-  Dynamixel.moveSpeed(DYMX_ID_TRAP, 500, 1000);
+  Dynamixel.moveSpeed(DYMX_ID_TRAP, 508, 1000);
   _trapIsOpen = false;
   //Dynamixel.moveSpeed(DYMX_ID_TRAP, 500, 100);
 }

@@ -34,7 +34,7 @@ class Brain {
     long last_blink;
     bool last_state_led;
     STATE _state; //unsigned int _current_state;
-    long _startTime;
+    unsigned long _startTime;
     bool _trapIsOpen;
     int _bottle_count;
 
@@ -44,6 +44,7 @@ class Brain {
     int _speed, _steer;
 
     int _xPosLinCam, _yPosLinCam, _thetaLinCam;
+    bool _flag_go_again = false;
 
     // State functions
     void execute_fsm();
@@ -61,7 +62,7 @@ class Brain {
     void approachNearestBottle();
     void randomWalkAvoidingObstacles();
     int getBottleCount();
-    long getTimeMillis();
+    unsigned long getTimeMillis();
     bool obstacleInTheWay();
     bool isHome();
     bool hasStuckBottle();

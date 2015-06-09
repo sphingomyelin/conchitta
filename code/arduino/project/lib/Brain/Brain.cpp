@@ -85,8 +85,8 @@ void Brain::run() {
     // Bluetooth.send((float)analogRead(IR_FRONT));
     Bluetooth.send("RC Mode");
     countBottles();
-    // Bluetooth.send((int)getBottleCount());
-    // Bluetooth.send((float)analogRead(IR_FRONT));
+    Bluetooth.send((int)getBottleCount());
+    Bluetooth.send((float)analogRead(IR_FRONT));
     if (Bluetooth.buttonIsOn(3)) {
       stopMotors();
     } else {
@@ -139,6 +139,7 @@ void Brain::stateGetBottles() {
     setStateRPi(RPI_GET_BOTTLES);
     _rpi_count = 0;
   }
+  _rpi_count++;
   checkForNoStuckBottle();
   countBottles();
   //Bluetooth.send((int)(_getbottles_time_turning+TIME_GOING_STRAIGHT));
@@ -171,14 +172,15 @@ void Brain::stateGoHome() {
     _rpi_count = 0;
     setStateRPi(RPI_GO_HOME);
   }
-  
+  _rpi_count++;
+
   if(isHome()) {
     setState(RELEASE_BOTTLES);
     return;
   }
   if(getLed()) {
     if(_colorLed == 'j') {
-      setSpeedAvoidingObstacles(MAX_SPEED, ((_xBottle - 160.0) / 160.0) * SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
+      setSpeedAvoidingObstacles(MAX_SPEED, ((_xLed - 160.0) / 160.0) * SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
       _going_home_last_forward_command = millis();
       return;
     }
@@ -264,6 +266,8 @@ void Brain::stateAvoidObstacleHome() {
 
 void Brain::stateStuckBottle() {
   SEND("STUCK_BOTTLE");
+  setSpeed(-100, 0);
+  delay(200);
   setSpeed(0, 0);
   turnBeltBackward();
   delay(2000);
@@ -274,7 +278,7 @@ void Brain::stateStuckBottle() {
     dir = -1;
   }
   unsigned long turning_time = millis();
-  while(millis() - turning_time < 2500) {
+  while(millis() - turning_time < 2000) {
     setSpeedAvoidingObstacles(SLOW_SPEED, dir*SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
   }
   setSpeed(0, 0);
@@ -362,7 +366,7 @@ bool Brain::isHome() {
   // }
 
   if(getEndLinCam()) {
-    if(_f_nb > 12) {
+    if(_f_nb > 10) {
       return true;
     }
   }
@@ -457,8 +461,8 @@ bool Brain::getPosNearestBottle() {
   if(found_x && found_y) {
     _xBottle = xBottle;
     _yBottle = yBottle;
-    Bluetooth.send((int)_xBottle);
-    Bluetooth.send((float)_yBottle);
+    // Bluetooth.send((int)_xBottle);
+    // Bluetooth.send((float)_yBottle);
     _findbottle_expiration = millis();
     // Bluetooth.send("REC X/Y");
     return true;
@@ -495,8 +499,8 @@ bool Brain::getLed() {
   while(Serial.read() != -1);
 
   if(found_led) {
-    Bluetooth.send(_xLed);
-    Bluetooth.send((float)(_colorIntensity));
+    // Bluetooth.send(_xLed);
+    // Bluetooth.send((float)(_colorIntensity));
     _findled_expiration = millis();
     // Bluetooth.send("REC LED");
     return true;

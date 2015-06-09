@@ -84,7 +84,7 @@ void loop()
     Serial1.print("b");
     Serial1.println(localization.b_index);
     
-    
+    delay(50);
   // }
   // while(!Serial.available());
 

@@ -112,6 +112,9 @@ class Brain {
     int _led_home[LED_INTENSITY_MEDIAN_SIZE];
     int _led_home_index;
     int _found_intensity = false;
+    unsigned long _going_home_last_forward_command;
+    unsigned long _going_home_time_turning = 2000;
+    int _going_home_direction = 1;
 
     int _bottle_at_ramp[BOTTLE_COUNT_MEDIAN_SIZE];
     int _bottle_check_index;

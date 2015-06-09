@@ -81,11 +81,11 @@ void Brain::run() {
 
   // --------------------------------------------- TESTING ----------------------------------------------------- TODO
 
-    Bluetooth.send((float)((int)(_xPosLinCam*10.0) + ((int)(_yPosLinCam*10.0))/100.0));
+    // Bluetooth.send((float)((int)(_xPosLinCam*10.0) + ((int)(_yPosLinCam*10.0))/100.0));
     // Bluetooth.send((float)analogRead(IR_FRONT));
     Bluetooth.send("RC Mode");
     countBottles();
-    // Bluetooth.send(getBottleCount());
+    Bluetooth.send(getBottleCount());
     Bluetooth.send(analogRead(IR_FRONT));
     if (Bluetooth.buttonIsOn(3)) {
       stopMotors();
@@ -166,13 +166,23 @@ void Brain::stateGoHome() {
   if(getLed()) {
     if(_colorLed == 'j') {
       setSpeedAvoidingObstacles(MAX_SPEED, ((_xBottle - 160.0) / 160.0) * SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
-    } else {
-      setSpeed(_speed*(IR_OBST_SMOOTHING_RATIO), _steer*(IR_OBST_SMOOTHING_RATIO) + (1.0-IR_OBST_SMOOTHING_RATIO)*SLOW_STEER);
+      return;
     }
-  } else {
-    setSpeed(_speed*(IR_OBST_SMOOTHING_RATIO), _steer*(IR_OBST_SMOOTHING_RATIO) + (1.0-IR_OBST_SMOOTHING_RATIO)*SLOW_STEER);
-  }
+  } 
 
+  // setSpeed(_speed*(IR_OBST_SMOOTHING_RATIO), _steer*(IR_OBST_SMOOTHING_RATIO) + (1.0-IR_OBST_SMOOTHING_RATIO)*SLOW_STEER);
+  
+  unsigned long time_since_last_forward = millis() - _going_home_last_forward_command;
+  if(time_since_last_forward < TIME_GOING_STRAIGHT_GOING_HOME) {
+    // Go straight, but avoid obstacles if possible
+    setSpeedAvoidingObstacles(MAX_SPEED, 0, IR_OBST_SMOOTHING_RATIO);
+  } else if(time_since_last_forward < (TIME_GOING_STRAIGHT_GOING_HOME + _going_home_time_turning)) {
+    setSpeedAvoidingObstacles(0, _going_home_direction*MAX_STEER, IR_OBST_LOWER_THRESHOLD);
+  } else {
+    _going_home_last_forward_command = millis();
+    _going_home_time_turning = random(TIME_TURNING_MIN_GOING_HOME, TIME_TURNING_MAX_GOING_HOME);
+    _going_home_direction = (int)(random(0, 2))*2-1;
+  }
 }
 
 void Brain::stateReleaseBottles() {
@@ -554,14 +564,14 @@ void Brain::setSpeedAvoidingObstacles(int speed, int steer, float smoothing) {
   int ir_obst_fl_meas = analogRead(IR_OBST_FL);
   int ir_obst_fr_meas = analogRead(IR_OBST_FR);
 
-  if(ir_obst_sl_meas > IR_OBST_SL_TH) ir_obst_sl_valid = 1;
-  if(ir_obst_sr_meas > IR_OBST_SR_TH) ir_obst_sr_valid = 1;
-  if(ir_obst_fl_meas > IR_OBST_FL_TH) ir_obst_fl_valid = 1;
-  if(ir_obst_fr_meas > IR_OBST_FR_TH) ir_obst_fr_valid = 1;
+  if(ir_obst_sl_meas > IR_OBST_LOWER_THRESHOLD) ir_obst_sl_valid = 1;
+  if(ir_obst_sr_meas > IR_OBST_LOWER_THRESHOLD) ir_obst_sr_valid = 1;
+  if(ir_obst_fl_meas > IR_OBST_LOWER_THRESHOLD) ir_obst_fl_valid = 1;
+  if(ir_obst_fr_meas > IR_OBST_LOWER_THRESHOLD) ir_obst_fr_valid = 1;
 
   _speed = (int) (_speed*(smoothing) + (1.0 - smoothing) *
-           (speed - (int)ir_obst_fl_valid*pow(3.15,ir_obst_fl_meas/100.0)
-                  - (int)ir_obst_fr_valid*pow(3.15,ir_obst_fr_meas/100.0)));
+           (speed - (LINEARITY_SPEED*ir_obst_fl_meas-LINEARITY_SPEED*IR_OBST_LOWER_THRESHOLD)*ir_obst_fl_valid
+                  - (LINEARITY_SPEED*ir_obst_fr_meas-LINEARITY_SPEED*IR_OBST_LOWER_THRESHOLD)*ir_obst_fr_valid));
 
   _steer = (int) (_steer*(smoothing) + (1.0 - smoothing) *
            (steer +(LINEARITY*ir_obst_sl_meas-LINEARITY*IR_OBST_LOWER_THRESHOLD)*ir_obst_sl_valid 

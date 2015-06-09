@@ -49,15 +49,55 @@ void Localization::setTheta(float new_theta) {
   theta = new_theta;
 }
 
-void Localization::goingHome() {
-    Serial.println("For the peaks: ");
-    for(int i=NPIXELS;i<3*NPIXELS;i++)
-    {
-      Serial.print(data[i]);
-      Serial.print(" ");
+void Localization::goingHomeFront() {
+  // Serial.println("For the peaks: ");
+  // for(int i=NPIXELS;i<3*NPIXELS;i++)
+  // {
+  //   Serial.print(data[i]);
+  //   Serial.print(" ");
+  // }
+  // Serial.println("");
+  // Serial.println("");
+
+  int number = 0;
+  for(int i = NPIXELS; i < 3*NPIXELS; i++) {
+    if(data[i] == 255) number++;
+  }
+  f_nb = number;
+
+  // Serial.print("Number Max: ");
+  // Serial.println(f_nb);
+
+}
+
+void Localization::goingHomeBack() {
+    // Serial.println("For the peaks: ");
+    // for(int i=4*NPIXELS;i<6*NPIXELS;i++)
+    // {
+    //   Serial.print(data[i]);
+    //   Serial.print(" ");
+    // }
+    // Serial.println("");
+    // Serial.println("");
+
+  int number = 0, pos = 0;
+  for(int i = 4*NPIXELS; i < 6*NPIXELS; i++) {
+    if(data[i] == 255) {
+      pos += i;
+      number++;
     }
-    Serial.println("");
-    Serial.println("");
+  }
+  pos /= number;
+  if(number == 0) {
+    b_index = 999;
+  } else {
+    b_index = pos - 5*NPIXELS;  
+  }
+
+  // Serial.print("Index Back: ");
+  // Serial.println(b_index);
+
+  
 }
 
 

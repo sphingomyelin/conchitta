@@ -16,7 +16,7 @@ void setup()
   Serial1.begin(115200);
 
   delay(5000);
-  Serial.println("Start...");
+  // Serial.println("Start...");
 
   lcam_setup();
 
@@ -29,7 +29,7 @@ void loop()
 {
   //Wait for requests and take pictures in the meanwhile
   lcam_reset();
-  do {
+  // do {
     // Serial.println("----------------------------------------------");
     // Serial.println(millis());
     //lcam_integrate(50); // takes about 940 us at 50 us
@@ -40,11 +40,12 @@ void loop()
     // load pixel values to lcam_buffer byte array
     lcam_read();
 
-    localization.goingHome();    
+    localization.goingHomeFront();
+    localization.goingHomeBack();
 
     // get the peaks from the pixel data    
-    localization.preprocessPixels();
-    localization.calculatePeaks();
+    // localization.preprocessPixels();
+    // localization.calculatePeaks();
     // Display the peaks
     // for(int i = 0; i < 4; i++) {
     //   Serial.print("Peak height ");
@@ -61,7 +62,7 @@ void loop()
     // localization.setTheta(THETA_START);
     
     // Update the pose
-    localization.calculatePose();
+    // localization.calculatePose();
 
     // Serial.print("Position: (");
     // Serial.print(localization.getX());
@@ -70,15 +71,22 @@ void loop()
     // Serial.print("), orientation: ");
     // Serial.println(localization.getTheta());
 
-    Serial1.print("x");
-    Serial1.println(localization.getX());
-    Serial1.print("y");
-    Serial1.println(localization.getY());
-    Serial1.print("t");
-    Serial1.println(localization.getTheta());
+    // Serial1.print("x");
+    // Serial1.println(localization.getX());
+    // Serial1.print("y");
+    // Serial1.println(localization.getY());
+    // Serial1.print("t");
+    // Serial1.println(localization.getTheta());
+
+
+    Serial1.print("f");
+    Serial1.println(localization.f_nb);
+    Serial1.print("b");
+    Serial1.println(localization.b_index);
     
-  }
-  while(!Serial.available());
+    
+  // }
+  // while(!Serial.available());
 
   // load pixel values to lcam_buffer byte array
   // lcam_read();

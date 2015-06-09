@@ -18,7 +18,7 @@
 //=================================== BATTERY CHARGER SETTINGS ======================================================================
 
 #define batvolt            980     // This is the nominal battery voltage reading. Peak charge can only occur above this voltage.
-#define lowvolt            410//410     // This is the voltage at which the speed controller goes into recharge mode.
+#define lowvolt            300//410     // This is the voltage at which the speed controller goes into recharge mode.
 #define chargetimeout   300000     // If the battery voltage does not change in this number of milliseconds then stop charging.
 
 

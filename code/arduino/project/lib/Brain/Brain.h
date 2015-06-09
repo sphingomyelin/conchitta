@@ -76,6 +76,7 @@ class Brain {
 
     // Communication with Arduino Micro
     bool getPosFromLinCam();
+    bool getEndLinCam();
     int getXPosLinCam();
     int getYPosLinCam();
     int getThetaLinCam();
@@ -95,8 +96,8 @@ class Brain {
 
 
     //	VARIABLES OF STATES
-    unsigned long _getbottles_last_forward_command;
-    unsigned long _getbottles_time_turning;
+    unsigned long _getbottles_last_forward_command = 0;
+    unsigned long _getbottles_time_turning = 2000;
     int _getbottles_direction;
     int _getbottles_speed;
     int _getbottles_steer;
@@ -112,7 +113,7 @@ class Brain {
     int _led_home[LED_INTENSITY_MEDIAN_SIZE];
     int _led_home_index;
     int _found_intensity = false;
-    unsigned long _going_home_last_forward_command;
+    unsigned long _going_home_last_forward_command = 0;
     unsigned long _going_home_time_turning = 2000;
     int _going_home_direction = 1;
 
@@ -123,6 +124,11 @@ class Brain {
 
     bool _stuck_in_corner = false;
     int _dir_stuck_in_corner = -1;
+
+    int _f_nb = 0;
+    int _b_index = 0;
+
+    int _rpi_count = 0;
 
     // Test variable for now
     // unsigned long _last_state_change_rpi;

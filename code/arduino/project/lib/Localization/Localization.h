@@ -16,7 +16,8 @@ class Localization
   void preprocessPixels();
   int calculatePeaks();
   bool calculatePose();
-  void goingHome();
+  void goingHomeFront();
+  void goingHomeBack();
   //void sendPicture(int cam);
   float getX();
   float getY();
@@ -25,6 +26,11 @@ class Localization
   void setX(float new_x);
   void setY(float new_y);
   void setTheta(float new_theta);
+
+
+  float f_nb;
+  float b_index;
+
 
   private:
   int peak[4][2];
@@ -37,7 +43,6 @@ class Localization
   float x;
   float y;
   float theta;
-
   // unsigned long _findled_expiration = 0;
   // int _xLed = 0;
   // char _colorLed = 0;

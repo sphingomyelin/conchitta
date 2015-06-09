@@ -74,7 +74,7 @@ void Brain::execute_fsm() {
 void Brain::run() {
   //Serial.println(millis());
   Bluetooth.process();
-  getPosFromLinCam(); // --------------- TESTING THIS -------------------
+  // getPosFromLinCam(); // --------------- TESTING THIS -------------------
   if(Bluetooth.buttonIsOn(2)) {
     execute_fsm();
   } else {
@@ -85,8 +85,8 @@ void Brain::run() {
     // Bluetooth.send((float)analogRead(IR_FRONT));
     Bluetooth.send("RC Mode");
     countBottles();
-    Bluetooth.send(getBottleCount());
-    Bluetooth.send(analogRead(IR_FRONT));
+    // Bluetooth.send((int)getBottleCount());
+    // Bluetooth.send((float)analogRead(IR_FRONT));
     if (Bluetooth.buttonIsOn(3)) {
       stopMotors();
     } else {
@@ -135,20 +135,28 @@ void Brain::stateGetBottlesTransition() {
 
 void Brain::stateGetBottles() {
   // SEND("GET_BOTTLES_STATE");
-  setStateRPi(RPI_GET_BOTTLES);
+  if(_rpi_count > 10) {
+    setStateRPi(RPI_GET_BOTTLES);
+    _rpi_count = 0;
+  }
   checkForNoStuckBottle();
+  countBottles();
   //Bluetooth.send((int)(_getbottles_time_turning+TIME_GOING_STRAIGHT));
   if(getTimeMillis() > TIME_END_GO_HOME) {
     setState(GO_HOME);
+    return;
   } else if(getBottleCount() > MAX_BOTTLES) {
     setState(GO_HOME);
+    return;
   } /*else if(obstacleInTheWay()) {
     setState(AVOID_OBSTACLE);
   }*/ else if(hasStuckBottle()) {
     setState(STUCK_BOTTLE);
+    return;
   } else {
     if(getPosNearestBottle()) {
       SEND("BOTTLE O.O");
+      _getbottles_last_forward_command = millis();
       approachNearestBottle();
     } else {
       randomWalkAvoidingObstacles();
@@ -159,13 +167,19 @@ void Brain::stateGetBottles() {
 void Brain::stateGoHome() {
   SEND("GO_HOME");
   // turnBeltForward();
-  setStateRPi(RPI_GO_HOME);
+  if(_rpi_count == 20) {
+    _rpi_count = 0;
+    setStateRPi(RPI_GO_HOME);
+  }
+  
   if(isHome()) {
     setState(RELEASE_BOTTLES);
+    return;
   }
   if(getLed()) {
     if(_colorLed == 'j') {
       setSpeedAvoidingObstacles(MAX_SPEED, ((_xBottle - 160.0) / 160.0) * SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
+      _going_home_last_forward_command = millis();
       return;
     }
   } 
@@ -177,7 +191,7 @@ void Brain::stateGoHome() {
     // Go straight, but avoid obstacles if possible
     setSpeedAvoidingObstacles(MAX_SPEED, 0, IR_OBST_SMOOTHING_RATIO);
   } else if(time_since_last_forward < (TIME_GOING_STRAIGHT_GOING_HOME + _going_home_time_turning)) {
-    setSpeedAvoidingObstacles(0, _going_home_direction*MAX_STEER, IR_OBST_LOWER_THRESHOLD);
+    setSpeedAvoidingObstacles(0, _going_home_direction*SLOW_STEER, IR_OBST_SMOOTHING_RATIO);
   } else {
     _going_home_last_forward_command = millis();
     _going_home_time_turning = random(TIME_TURNING_MIN_GOING_HOME, TIME_TURNING_MAX_GOING_HOME);
@@ -188,8 +202,18 @@ void Brain::stateGoHome() {
 void Brain::stateReleaseBottles() {
   SEND("RELEASE_BOTTLES");
   // TODO: TURN 180 DEGREES properly
-  int started_turning = millis();
-  while(started_turning - millis() < TIME_TURNING_RELEASE_BOTTLES) {
+  // int started_turning = millis();
+  // while(started_turning - millis() < TIME_TURNING_RELEASE_BOTTLES) {
+  //   setSpeedAvoidingObstacles(0, MAX_STEER, IR_OBST_SMOOTHING_RATIO);
+  // }
+
+  while(1) {
+    if(getEndLinCam()) {
+      if(abs(_b_index) < 10) {
+        setSpeed(0, 0);
+        break;
+      }
+    }
     setSpeedAvoidingObstacles(0, MAX_STEER, IR_OBST_SMOOTHING_RATIO);
   }
   setSpeed(0, 0);
@@ -279,7 +303,7 @@ void Brain::randomWalkAvoidingObstacles() {
     // Go straight, but avoid obstacles if possible, but if not... tant pis
     setSpeedAvoidingObstacles(MAX_SPEED, 0, IR_OBST_SMOOTHING_RATIO);
   } else if(time_since_last_forward < (TIME_GOING_STRAIGHT + _getbottles_time_turning)) {
-    setSpeed(0, _getbottles_direction*MAX_STEER);
+    setSpeedAvoidingObstacles(0, _getbottles_direction*MAX_STEER, IR_OBST_SMOOTHING_RATIO);
   } else {
     _getbottles_last_forward_command = millis();
     _getbottles_time_turning = random(TIME_TURNING_MIN, TIME_TURNING_MAX);
@@ -315,24 +339,30 @@ bool Brain::isHome() {
   //   return false;
   // }
 
-  if(_found_intensity) {
-    _led_home[_led_home_index] = _colorIntensity;
-    _led_home_index = (_led_home_index + 1) % LED_INTENSITY_MEDIAN_SIZE;
-    // Calculate the pseudo-median
-    int avg = 0;
-    for(int i = 0; i < LED_INTENSITY_MEDIAN_SIZE; i++) {
-      avg += _led_home[i];
-    }
-    avg /= LED_INTENSITY_MEDIAN_SIZE;
-    int median_index = 0, diff = 20000;
-    for(int i = 0; i < LED_INTENSITY_MEDIAN_SIZE; i++) {
-      if(abs(avg - _led_home[i]) < diff) {
-        diff = abs(avg - _led_home[i]);
-        median_index = i;
-      }
-    }
+  // if(_found_intensity) {
+  //   _led_home[_led_home_index] = _colorIntensity;
+  //   _led_home_index = (_led_home_index + 1) % LED_INTENSITY_MEDIAN_SIZE;
+  //   // Calculate the pseudo-median
+  //   int avg = 0;
+  //   for(int i = 0; i < LED_INTENSITY_MEDIAN_SIZE; i++) {
+  //     avg += _led_home[i];
+  //   }
+  //   avg /= LED_INTENSITY_MEDIAN_SIZE;
+  //   int median_index = 0, diff = 20000;
+  //   for(int i = 0; i < LED_INTENSITY_MEDIAN_SIZE; i++) {
+  //     if(abs(avg - _led_home[i]) < diff) {
+  //       diff = abs(avg - _led_home[i]);
+  //       median_index = i;
+  //     }
+  //   }
 
-    if(_led_home[median_index] > HOME_INTENSITY_THRESHOLD) {
+  //   if(_led_home[median_index] > HOME_INTENSITY_THRESHOLD) {
+  //     return true;
+  //   }
+  // }
+
+  if(getEndLinCam()) {
+    if(_f_nb > 12) {
       return true;
     }
   }
@@ -522,6 +552,37 @@ bool Brain::getPosFromLinCam() {
     _yPosLinCam = y;
     _thetaLinCam = theta;
     // Bluetooth.send("REC X/Y");
+    return true;
+  } else {
+    // Bluetooth.send("NOT REC BOT");
+    return false;
+  }
+}
+
+bool Brain::getEndLinCam() {
+  bool found_f = false, found_b = false;
+  int f_nb = 0, b_index = 0;
+  // delay(5);
+  // while(Serial.available() > 0) {
+  while((!found_f || !found_b) && Serial3.available() > 0) {
+    char charRPI = Serial3.read();
+    if (charRPI=='f') {
+      found_f = true;
+      f_nb = Serial3.parseInt();
+    } else if(charRPI=='b') {
+      found_b = true;
+      b_index = Serial3.parseInt();
+    }
+  }
+  // Discard everything in buffer
+  while(Serial3.read() != -1);
+
+ // ------------------------ INSERT THAT ONE VALUE COUNTS FOR SOME SECONDS -------------------------
+  if(found_f && found_b) {
+    _f_nb = f_nb;
+    _b_index = b_index;
+    Bluetooth.send((int)_f_nb);
+    Bluetooth.send((float)_b_index);
     return true;
   } else {
     // Bluetooth.send("NOT REC BOT");

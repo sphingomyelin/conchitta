@@ -57,6 +57,7 @@ class Brain {
     void stateAvoidObstacle();
     void stateAvoidObstacleHome();
     void stateStuckBottle();
+    void stateStop();
 
     // functions used by state functions
     void approachNearestBottle();

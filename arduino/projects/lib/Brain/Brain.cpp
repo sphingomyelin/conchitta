@@ -144,7 +144,10 @@ void Brain::stateGetBottles() {
   checkForNoStuckBottle();
   countBottles();
   //Bluetooth.send((int)(_getbottles_time_turning+TIME_GOING_STRAIGHT));
-  if(getTimeMillis() > TIME_END_GO_HOME && !_flag_go_again) {
+  if(getTimeMillis() > TIME_END) {
+    setState(STOP);
+    return;
+  } else if(getTimeMillis() > TIME_END_GO_HOME && !_flag_go_again) {
     setState(GO_HOME);
     return;
   } else if(getBottleCount() > MAX_BOTTLES) {
@@ -287,6 +290,14 @@ void Brain::stateStuckBottle() {
   turnBeltForward();
   _stuckbottle_last_free = millis();
   setState(GET_BOTTLES);
+}
+
+void Brain::stateStop() {
+  SEND("STOP");
+  setSpeed(0, 0);
+  stopBelt();
+  stopMotors();
+  setStateRPi(RPI_SHUTDOWN);
 }
 
 

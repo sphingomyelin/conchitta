@@ -14,7 +14,7 @@ void setup() {
 
   // Serial USB connection to computer
   Serial.begin(9600);
-  delay(5000);
+  delay(30000);
   SEND("Start");
 
   // Serial2 Bluetooth connection to smartphone

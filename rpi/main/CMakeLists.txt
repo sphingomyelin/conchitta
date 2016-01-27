@@ -1,5 +1,6 @@
-cmake_minimum_required (VERSION 2.8) 
-set (CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};/home/pi/raspicam-0.1.3/build")
+cmake_minimum_required (VERSION 2.8)
+MESSAGE(STATUS "${CMAKE_CURRENT_SOURCE_DIR}")
+set (CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/../setup/raspicam-0.1.3/build")
 project (raspicam_test)
 find_package(raspicam REQUIRED)
 find_package(OpenCV)

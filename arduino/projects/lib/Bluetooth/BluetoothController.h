@@ -47,7 +47,7 @@ class BluetoothController {
     long sendInterval = FAST;                           // interval between Buttons status transmission (milliseconds)
     int _joySteer;
     int _joySpeed;
-    bool _buttonStatus[6] = {false, false, false, false, false, false};
+    bool _buttonStatus[6] = {false, true, false, false, false, false};
 
     String getButtonStatusString();
     void sendBlueToothData();

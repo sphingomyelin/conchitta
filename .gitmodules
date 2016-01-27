@@ -1,3 +1,0 @@
-[submodule "Arduino-Makefile"]
-	path = code/arduino/project/Arduino-Makefile
-	url = https://github.com/WeAreLeka/Arduino-Makefile
